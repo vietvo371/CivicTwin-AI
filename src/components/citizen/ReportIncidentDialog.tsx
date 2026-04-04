@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "@/lib/i18n";
@@ -59,40 +59,77 @@ export default function ReportIncidentDialog() {
     setOpen(true);
   };
 
-  // ─── MODULE 1: GPS Auto-Detect ───
-  const handleGetGPS = () => {
-    if (!navigator.geolocation) {
-      toast.error(t('report.gpsNotSupported'));
-      return;
-    }
-    setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        setCoords({ lat, lng });
+  // ─── MODULE 1: GPS (tự chạy khi mở dialog + nút làm lại) ───
+  const requestCurrentLocation = useCallback(
+    (opts?: { silent?: boolean }) => {
+      if (typeof window === "undefined" || !navigator.geolocation) {
+        if (!opts?.silent) toast.error(t("report.gpsNotSupported"));
+        return;
+      }
+      setGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setCoords({ lat, lng });
+          const fallbackLine = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
-        // Reverse Geocode via Mapbox
-        try {
-          const res = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&language=vi&limit=1`
-          );
-          const geo = await res.json();
-          const placeName = geo.features?.[0]?.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          setLocation(placeName);
-          toast.success(`📍 ${t('report.gpsLocated')}`, { description: placeName });
-        } catch {
-          setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        }
-        setGpsLoading(false);
-      },
-      (err) => {
-        toast.error(`${t('report.gpsFailed')}: ${err.message}`);
-        setGpsLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
+          if (!MAPBOX_TOKEN.trim()) {
+            setLocation(fallbackLine);
+            setGpsLoading(false);
+            if (!opts?.silent) {
+              toast.success(`📍 ${t("report.gpsLocated")}`, {
+                description: t("report.gpsNoMapboxToken"),
+              });
+            }
+            return;
+          }
+
+          try {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&language=vi&limit=1`
+            );
+            const geo = await res.json();
+            const placeName =
+              geo.features?.[0]?.place_name || fallbackLine;
+            setLocation(placeName);
+            if (!opts?.silent) {
+              toast.success(`📍 ${t("report.gpsLocated")}`, {
+                description: placeName,
+              });
+            }
+          } catch {
+            setLocation(fallbackLine);
+            if (!opts?.silent) {
+              toast.success(`📍 ${t("report.gpsLocated")}`, {
+                description: fallbackLine,
+              });
+            }
+          }
+          setGpsLoading(false);
+        },
+        (err) => {
+          if (!opts?.silent) {
+            toast.error(`${t("report.gpsFailed")}: ${err.message}`);
+          }
+          setGpsLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+      );
+    },
+    [t]
+  );
+
+  const gpsOpenCycleRef = useRef(0);
+  useEffect(() => {
+    if (!open) return;
+    const cycle = ++gpsOpenCycleRef.current;
+    const id = window.setTimeout(() => {
+      if (gpsOpenCycleRef.current !== cycle) return;
+      requestCurrentLocation({ silent: true });
+    }, 400);
+    return () => clearTimeout(id);
+  }, [open, requestCurrentLocation]);
 
   // ─── MODULE 2: Groq NLP Auto-Fill ───
   const handleAIParse = async () => {
@@ -150,6 +187,15 @@ export default function ReportIncidentDialog() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const data = res.data?.data;
+      const envelopeMsg = typeof res.data?.message === 'string' ? res.data.message : '';
+
+      const isVisionObject =
+        data !== null && typeof data === 'object' && !Array.isArray(data);
+      if (!isVisionObject) {
+        toast.warning(envelopeMsg || t('report.aiVisionFailed'));
+        setAiVisionLoading(false);
+        return;
+      }
 
       if (data?.type && ['accident', 'congestion', 'construction', 'weather', 'other'].includes(data.type)) {
         setIncidentType(data.type);
@@ -164,9 +210,15 @@ export default function ReportIncidentDialog() {
       setAiVisionResult(data);
 
       const conf = data?.confidence ? `(${(data.confidence * 100).toFixed(0)}%)` : '';
-      toast.success(`${t('report.aiVisionSuccess')} ${conf}`, {
-        description: data?.description || t('report.aiVisionDetected'),
-      });
+      if (data?.unclear) {
+        toast.warning(envelopeMsg || t('report.aiVisionFailed'), {
+          description: [data.user_hint, data.description].filter(Boolean).join(' ') || undefined,
+        });
+      } else {
+        toast.success(`${t('report.aiVisionSuccess')} ${conf}`, {
+          description: data?.description || t('report.aiVisionDetected'),
+        });
+      }
     } catch {
       // Vision fail is non-blocking - user can still submit
       toast.info(t('report.aiVisionFailed'));
@@ -283,7 +335,7 @@ export default function ReportIncidentDialog() {
                     ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/30'
                     : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-white/10'
                   }`}
-                onClick={handleGetGPS}
+                onClick={() => requestCurrentLocation()}
                 disabled={gpsLoading}
               >
                 {gpsLoading ? (
@@ -308,6 +360,9 @@ export default function ReportIncidentDialog() {
                 📍 {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
               </p>
             )}
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 pl-1 leading-relaxed">
+              {t("report.locationAutoGpsHint")}
+            </p>
           </div>
 
           {/* Type & Severity Grid */}

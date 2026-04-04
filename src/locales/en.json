@@ -706,6 +706,8 @@
     "gpsLocated": "Location detected!",
     "gpsFailed": "Unable to get location",
     "gpsNotSupported": "Your browser does not support GPS.",
+    "locationAutoGpsHint": "When you open this form, we try to get your current location and fill the address. Tap the GPS button again or edit manually.",
+    "gpsNoMapboxToken": "GPS coordinates saved (Mapbox token not set for address lookup).",
     "locationPlaceholder": "E.g., Intersection of Han River Bridge...",
     "selectType": "Select type",
     "accidentCrash": "Accident (Crash)",

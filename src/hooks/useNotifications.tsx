@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import api from '@/lib/api';
 
 export interface Notification {
   id: string;
@@ -36,42 +37,26 @@ const NotificationContext = createContext<NotificationContextType>({
 });
 
 const MAX_NOTIFICATIONS = 50;
-const LOCAL_STORAGE_KEY = 'civictwin-read-notifs';
 
-const getReadIds = (): Set<string> => {
-  if (typeof window === 'undefined') return new Set();
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  } catch {
-    return new Set();
-  }
-};
-
-const saveReadIds = (ids: Set<string>) => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(Array.from(ids)));
-  } catch {}
-};
+/** Khớp Laravel `Str::isUuid` — chỉ id này mới PATCH `/notifications/{id}/read`. */
+function isNotificationUuid(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const counterRef = useRef(0);
   const [seeded, setSeeded] = useState(false);
 
-  // Load from local storage initially inside seedNotifications
-
   const addNotification = useCallback((n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     counterRef.current += 1;
     const newId = `notif-${Date.now()}-${counterRef.current}`;
-    const readIds = getReadIds();
     
     const newNotification: Notification = {
       ...n,
       id: newId,
       timestamp: new Date(),
-      read: readIds.has(newId),
+      read: false, // New realtime notifications start as unread
     };
     setNotifications(prev => [newNotification, ...prev].slice(0, MAX_NOTIFICATIONS));
   }, []);
@@ -79,30 +64,39 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const seedNotifications = useCallback((items: Notification[]) => {
     setNotifications(prev => {
       const existingIds = new Set(prev.map(n => n.id));
-      const readIds = getReadIds();
       const newItems = items
-        .filter(i => !existingIds.has(i.id))
-        .map(i => ({ ...i, read: i.read || readIds.has(i.id) }));
+        .filter(i => !existingIds.has(i.id));
       return [...prev, ...newItems].slice(0, MAX_NOTIFICATIONS);
     });
     setSeeded(true);
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    const ids = getReadIds();
-    ids.add(id);
-    saveReadIds(ids);
+  const markAsRead = useCallback(async (id: string) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+
+    const cleanId = id.replace(/^seed-/, '');
+    if (!isNotificationUuid(cleanId)) {
+      // Thông báo chỉ tồn tại trên client (Echo toast: notif-…), không có bản ghi DB.
+      return;
+    }
+
+    try {
+      await api.patch(`/notifications/${cleanId}/read`);
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
   }, []);
 
-  const markAllRead = useCallback(() => {
-    setNotifications(prev => {
-      const next = prev.map(n => ({ ...n, read: true }));
-      const ids = getReadIds();
-      next.forEach(n => ids.add(n.id));
-      saveReadIds(ids);
-      return next;
-    });
+  const markAllRead = useCallback(async () => {
+    // Optimistic Update
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    
+    // API Call
+    try {
+      await api.patch('/notifications/read-all');
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   }, []);
 
   const clearAll = useCallback(() => {
@@ -112,7 +106,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, seedNotifications, markAsRead, markAllRead, clearAll, seeded }}>
+    <NotificationContext.Provider value={{ 
+      notifications, 
+      unreadCount, 
+      addNotification, 
+      seedNotifications, 
+      markAsRead, 
+      markAllRead, 
+      clearAll, 
+      seeded 
+    }}>
       {children}
     </NotificationContext.Provider>
   );
@@ -121,4 +124,3 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 export function useNotifications() {
   return useContext(NotificationContext);
 }
-

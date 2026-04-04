@@ -706,6 +706,8 @@
     "gpsLocated": "Đã xác định vị trí!",
     "gpsFailed": "Không thể lấy vị trí",
     "gpsNotSupported": "Trình duyệt không hỗ trợ định vị GPS.",
+    "locationAutoGpsHint": "Khi mở form, trình duyệt tự thử lấy vị trí hiện tại và điền địa chỉ. Bạn có thể bấm lại nút GPS hoặc sửa tay.",
+    "gpsNoMapboxToken": "Đã lấy tọa độ GPS (chưa cấu hình Mapbox để tìm địa chỉ chữ).",
     "locationPlaceholder": "Ví dụ: Ngã tư cầu Rồng...",
     "selectType": "Chọn loại",
     "accidentCrash": "Tai nạn (Va chạm)",

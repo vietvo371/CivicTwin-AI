@@ -28,26 +28,33 @@ export function NotificationListener() {
     if (seeded || !user) return;
     const seed = async () => {
       try {
-        const res = await api.get('/incidents?per_page=20');
-        const incidents = res.data.data || [];
+        const res = await api.get('/notifications?per_page=20');
+        const notifications = res.data.data || [];
 
         // Determine link based on user role
         const role = user?.roles?.[0] || 'citizen';
         const linkPrefix = role === 'citizen' ? '/map' 
           : (role === 'emergency' ? '/emergency/incidents' : '/dashboard/incidents');
 
-        const items: NotifType[] = incidents.map((inc: any) => ({
-          id: `seed-${inc.id}`,
-          title: inc.title || 'Incident',
-          message: inc.description || inc.location_name || '',
-          type: 'incident' as const,
-          severity: inc.severity,
-          timestamp: new Date(inc.created_at),
-          read: inc.status === 'resolved',
-          link: role === 'citizen' ? `/map` : `${linkPrefix}/${inc.id}`,
-        }));
+        const items: NotifType[] = notifications.map((notif: any) => {
+          const type = notif.type === 'incident_created' ? 'incident' : 'system';
+          const incidentId = notif.data?.id || notif.data?.incident_id;
+          
+          return {
+            id: notif.id,
+            title: notif.title || 'Notification',
+            message: notif.message || '',
+            type: type as any,
+            severity: notif.data?.severity || 'medium',
+            timestamp: new Date(notif.created_at),
+            read: !!notif.read,
+            link: role === 'citizen' ? `/map` : (incidentId ? `${linkPrefix}/${incidentId}` : linkPrefix),
+          };
+        });
         seedNotifications(items);
-      } catch {}
+      } catch (error) {
+        console.error('[NotificationListener] ❌ Error seeding:', error);
+      }
     };
     seed();
   }, [seeded, seedNotifications, user]);
