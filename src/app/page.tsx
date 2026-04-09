@@ -12,8 +12,14 @@ const InfiniteMarquee = dynamic(() => import('@/components/landing/InfiniteMarqu
 const BentoGrid = dynamic(() => import('@/components/landing/BentoGrid'), {
   loading: () => <div className="h-96" />,
 });
+const ImpactStats = dynamic(() => import('@/components/landing/ImpactStats'), {
+  loading: () => <div className="h-96" />,
+});
 const HowItWorks = dynamic(() => import('@/components/landing/HowItWorks'), {
   loading: () => <div className="h-96" />,
+});
+const CTASection = dynamic(() => import('@/components/landing/CTASection'), {
+  loading: () => <div className="h-64" />,
 });
 const Footer = dynamic(() => import('@/components/landing/Footer'), {
   loading: () => <div className="h-40" />,
@@ -24,20 +30,21 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-clip font-sans selection:bg-blue-500/30">
-      
-      {/* Modern Navbar */}
+
       <Navbar showScrollProgress />
 
-      {/* Landing Page Content Sections */}
       <HeroSection />
-      
+
       <InfiniteMarquee />
-      
+
       <BentoGrid />
-      
+
+      <ImpactStats />
+
       <HowItWorks />
 
-      {/* Professional Footer */}
+      <CTASection />
+
       <Footer />
     </div>
   );

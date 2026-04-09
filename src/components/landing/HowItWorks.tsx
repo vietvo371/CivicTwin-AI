@@ -3,122 +3,164 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n";
-import { BrainIcon, RadarIcon, ShieldAlertIcon, MapIcon, ZapIcon, SearchCheckIcon, DatabaseIcon, BarChartIcon } from "../icons/TheSvgIcons";
+import { DatabaseIcon, BrainIcon, MapIcon, ZapIcon } from "../icons/TheSvgIcons";
+
+/* ── Mini Visualizations — consistent 80px height ── */
+
+function DataStreamViz() {
+  return (
+    <div className="relative w-full h-20 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 overflow-hidden border border-blue-500/10">
+      <svg viewBox="0 0 200 60" className="w-full h-full">
+        {[12, 24, 36, 48].map((y, i) => (
+          <g key={i}>
+            <line x1="0" y1={y} x2="200" y2={y} stroke="#3b82f6" strokeWidth="0.4" opacity="0.2" />
+            {[0, 1, 2, 3].map((j) => (
+              <circle key={j} r="2.5" cy={y} fill="#3b82f6" opacity="0.8">
+                <animate attributeName="cx" from="-10" to="210" dur={`${2 + i * 0.3}s`} begin={`${j * 0.5 + i * 0.2}s`} repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0;0.8;0.8;0" dur={`${2 + i * 0.3}s`} begin={`${j * 0.5 + i * 0.2}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
+          </g>
+        ))}
+        <path d="M155,5 L185,25 L185,35 L155,55 Z" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.4" />
+        <path d="M185,25 L198,28 L198,32 L185,35 Z" fill="#3b82f6" opacity="0.3" />
+      </svg>
+    </div>
+  );
+}
+
+function NeuralNetViz() {
+  const nodes = [
+    { x: 25, y: 12 }, { x: 25, y: 30 }, { x: 25, y: 48 },
+    { x: 70, y: 16 }, { x: 70, y: 34 }, { x: 70, y: 52 },
+    { x: 115, y: 22 }, { x: 115, y: 40 },
+    { x: 160, y: 30 },
+  ];
+  const connections = [
+    [0,3],[0,4],[0,5],[1,3],[1,4],[1,5],[2,3],[2,4],[2,5],
+    [3,6],[3,7],[4,6],[4,7],[5,6],[5,7],[6,8],[7,8],
+  ];
+
+  return (
+    <div className="relative w-full h-20 rounded-xl bg-purple-500/5 dark:bg-purple-500/10 overflow-hidden border border-purple-500/10">
+      <svg viewBox="0 0 185 60" className="w-full h-full">
+        {connections.map(([from, to], i) => (
+          <line key={i} x1={nodes[from].x} y1={nodes[from].y} x2={nodes[to].x} y2={nodes[to].y}
+            stroke="#a855f7" strokeWidth="0.6" opacity="0.25" />
+        ))}
+        {nodes.map((n, i) => (
+          <g key={i}>
+            <circle cx={n.x} cy={n.y} r="6" fill="#a855f7" opacity="0.1">
+              <animate attributeName="r" values="4;8;4" dur="2.5s" begin={`${i * 0.15}s`} repeatCount="indefinite" />
+            </circle>
+            <circle cx={n.x} cy={n.y} r="4" fill="#a855f7" opacity="0.85">
+              <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" begin={`${i * 0.15}s`} repeatCount="indefinite" />
+            </circle>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function SimulationViz() {
+  const bars = [
+    { before: 35, after: 65 },
+    { before: 50, after: 72 },
+    { before: 25, after: 48 },
+    { before: 60, after: 85 },
+    { before: 40, after: 58 },
+  ];
+  return (
+    <div className="relative w-full h-20 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 overflow-hidden border border-emerald-500/10 flex items-end gap-2 px-4 pb-2.5 pt-3">
+      {bars.map((bar, i) => (
+        <div key={i} className="flex-1 flex gap-1 items-end h-full">
+          <motion.div
+            initial={{ height: 0 }}
+            whileInView={{ height: `${bar.before}%` }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: i * 0.08 }}
+            className="flex-1 rounded-t bg-emerald-500/25"
+          />
+          <motion.div
+            initial={{ height: 0 }}
+            whileInView={{ height: `${bar.after}%` }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.4 + i * 0.08 }}
+            className="flex-1 rounded-t bg-emerald-400"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DeployViz() {
+  const { t } = useTranslation();
+  const items = [
+    { label: t('landing.signalOptimized'), dot: "bg-emerald-500" },
+    { label: t('landing.greenWaveActive'), dot: "bg-blue-500" },
+    { label: t('landing.citizensNotified'), dot: "bg-amber-500" },
+    { label: t('landing.routesUpdated'), dot: "bg-purple-500" },
+  ];
+  return (
+    <div className="w-full h-20 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/10 grid grid-cols-2 gap-1.5 p-2 overflow-hidden">
+      {items.map((item, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 + i * 0.1 }}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background/80 border border-border/50 text-[10px] font-semibold text-muted-foreground truncate"
+        >
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot} animate-pulse`} />
+          <span className="truncate">{item.label}</span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Main Component ── */
 
 export default function HowItWorks() {
   const { t } = useTranslation();
 
   const steps = [
     {
-      step: "01",
-      title: t('landing.step01Title'),
-      description: t('landing.step01Desc'),
-      icon: <DatabaseIcon className="w-7 h-7" />,
-      color: "text-blue-400",
-      borderColor: "border-blue-500/30",
-      bgGlow: "bg-blue-500/10",
-      visual: (
-        <div className="grid grid-cols-3 gap-2 w-full">
-          {[
-            t('landing.cameraFeed'), t('landing.floodSensor'), t('landing.weatherAPI'),
-            t('landing.mqttStream'), t('landing.citizenApp'), t('landing.gpsProbe')
-          ].map((s, i) => (
-            <div key={i} className="px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-mono text-center truncate">{s}</div>
-          ))}
-        </div>
-      ),
+      step: "01", title: t('landing.step01Title'), description: t('landing.step01Desc'),
+      icon: <DatabaseIcon className="w-5 h-5" />, color: "text-blue-400",
+      borderColor: "border-blue-500/20", bgGlow: "bg-blue-500/10",
+      visual: <DataStreamViz />,
     },
     {
-      step: "02",
-      title: t('landing.step02Title'),
-      description: t('landing.step02Desc'),
-      icon: <BrainIcon className="w-7 h-7" />,
-      color: "text-purple-400",
-      borderColor: "border-purple-500/30",
-      bgGlow: "bg-purple-500/10",
-      visual: (
-        <div className="flex items-center justify-between w-full gap-3">
-          <div className="flex-1 space-y-2">
-            {[85, 62, 94, 45].map((v, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="h-2 rounded-full bg-purple-500/20 flex-1 animate-shimmer">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${v}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1, delay: i * 0.15 }}
-                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"
-                  />
-                </div>
-                <span className="text-[10px] font-mono text-purple-300 w-8">{v}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
+      step: "02", title: t('landing.step02Title'), description: t('landing.step02Desc'),
+      icon: <BrainIcon className="w-5 h-5" />, color: "text-purple-400",
+      borderColor: "border-purple-500/20", bgGlow: "bg-purple-500/10",
+      visual: <NeuralNetViz />,
     },
     {
-      step: "03",
-      title: t('landing.step03Title'),
-      description: t('landing.step03Desc'),
-      icon: <MapIcon className="w-7 h-7" />,
-      color: "text-emerald-400",
-      borderColor: "border-emerald-500/30",
-      bgGlow: "bg-emerald-500/10",
-      visual: (
-        <div className="relative w-full h-16">
-          <svg viewBox="0 0 300 60" className="w-full h-full">
-            <path d="M0,40 Q50,10 100,30 T200,20 T300,35" fill="none" stroke="#10b981" strokeWidth="2" strokeDasharray="6"/>
-            <path d="M0,45 Q50,50 100,42 T200,48 T300,40" fill="none" stroke="#6366f1" strokeWidth="1.5" opacity="0.5"/>
-            <circle cx="100" cy="30" r="4" fill="#10b981" className="animate-pulse"/>
-            <circle cx="200" cy="20" r="3" fill="#f59e0b"/>
-            <text x="105" y="25" fill="#10b981" fontSize="8" fontFamily="monospace">Optimal</text>
-          </svg>
-        </div>
-      ),
+      step: "03", title: t('landing.step03Title'), description: t('landing.step03Desc'),
+      icon: <MapIcon className="w-5 h-5" />, color: "text-emerald-400",
+      borderColor: "border-emerald-500/20", bgGlow: "bg-emerald-500/10",
+      visual: <SimulationViz />,
     },
     {
-      step: "04",
-      title: t('landing.step04Title'),
-      description: t('landing.step04Desc'),
-      icon: <ZapIcon className="w-7 h-7" />,
-      color: "text-amber-400",
-      borderColor: "border-amber-500/30",
-      bgGlow: "bg-amber-500/10",
-      visual: (
-        <div className="flex gap-2 w-full flex-wrap">
-          {[
-            { label: t('landing.signalOptimized'), dot: "bg-emerald-500" },
-            { label: t('landing.greenWaveActive'), dot: "bg-blue-500" },
-            { label: t('landing.citizensNotified'), dot: "bg-amber-500" },
-            { label: t('landing.routesUpdated'), dot: "bg-purple-500" },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-[11px] font-medium text-muted-foreground"
-            >
-              <span className={`w-2 h-2 rounded-full ${item.dot} animate-pulse`}></span>
-              {item.label}
-            </motion.div>
-          ))}
-        </div>
-      ),
+      step: "04", title: t('landing.step04Title'), description: t('landing.step04Desc'),
+      icon: <ZapIcon className="w-5 h-5" />, color: "text-amber-400",
+      borderColor: "border-amber-500/20", bgGlow: "bg-amber-500/10",
+      visual: <DeployViz />,
     },
   ];
 
   return (
-    <section className="relative py-32">
+    <section id="how-it-works" className="relative py-32">
       <div className="container max-w-6xl mx-auto px-6">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-20">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="text-4xl md:text-5xl font-bold font-heading mb-6 text-foreground"
           >
             {t('landing.howIt')}{" "}
@@ -127,70 +169,89 @@ export default function HowItWorks() {
             </span>
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ delay: 0.1 }}
             className="text-lg text-muted-foreground"
           >
             {t('landing.howItWorksSubtitle')}
           </motion.p>
         </div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-8 md:left-1/2 md:-translate-x-px top-0 bottom-0 w-[2px] bg-secondary/80" />
+        {/* ── Desktop: Horizontal Stepper ── */}
+        <div className="hidden md:block relative">
+          {/* Connecting line */}
+          <div className="absolute top-[28px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-border/40">
+            <motion.div
+              initial={{ scaleX: 0, originX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 via-emerald-500 to-amber-500"
+            />
+          </div>
 
-          <div className="space-y-16 md:space-y-24">
+          <div className="grid grid-cols-4 gap-5">
             {steps.map((step, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className={`relative flex flex-col md:flex-row items-start gap-8 md:gap-16 ${
-                  idx % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                }`}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.15 }}
+                className="flex flex-col items-center"
               >
-                {/* Timeline Dot */}
-                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 z-20">
-                  <div className={`w-10 h-10 rounded-full ${step.bgGlow} border-2 ${step.borderColor} flex items-center justify-center backdrop-blur-md shadow-lg`}>
-                    <span className={step.color}>{step.icon}</span>
-                  </div>
+                {/* Step Circle */}
+                <div className={`relative z-10 w-14 h-14 rounded-full ${step.bgGlow} border-2 ${step.borderColor} flex items-center justify-center backdrop-blur-md shadow-lg mb-5 bg-background`}>
+                  <span className={step.color}>{step.icon}</span>
                 </div>
 
-                {/* Content Card */}
-                <div className={`ml-20 md:ml-0 md:w-[calc(50%-3rem)] ${idx % 2 === 0 ? "md:pr-4" : "md:pl-4"}`}>
-                  <div className={`rounded-2xl border ${step.borderColor} bg-card/60 backdrop-blur-md p-6 hover:bg-card/80 transition-all hover:shadow-xl group`}>
-                    {/* Step Number */}
-                    <div className={`text-xs font-bold ${step.color} uppercase tracking-[0.3em] mb-3`}>
-                      {t('landing.step')} {step.step}
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="text-xl md:text-2xl font-bold font-heading text-foreground mb-3 tracking-wide">
-                      {step.title}
-                    </h3>
-
-                    {/* Description */}
-                    <p className="text-muted-foreground leading-relaxed text-sm mb-5">
-                      {step.description}
-                    </p>
-
-                    {/* Mini Visual */}
-                    <div className="pt-4 border-t border-border/50">
-                      {step.visual}
-                    </div>
+                {/* Card — fixed height, overflow hidden */}
+                <div className={`rounded-2xl border ${step.borderColor} bg-card/60 backdrop-blur-md p-5 hover:bg-card/80 transition-all hover:shadow-xl w-full h-[340px] flex flex-col overflow-hidden`}>
+                  <div className={`text-xs font-bold ${step.color} uppercase tracking-[0.2em] mb-2 shrink-0`}>
+                    {t('landing.step')} {step.step}
+                  </div>
+                  <h3 className="text-base font-bold font-heading text-foreground mb-2 leading-snug shrink-0">
+                    {step.title}
+                  </h3>
+                  <p className="text-muted-foreground text-[13px] leading-relaxed line-clamp-3 shrink-0 mb-auto">
+                    {step.description}
+                  </p>
+                  <div className="mt-3 shrink-0">
+                    {step.visual}
                   </div>
                 </div>
-
-                {/* Spacer for the other side */}
-                <div className="hidden md:block md:w-[calc(50%-3rem)]" />
               </motion.div>
             ))}
           </div>
+        </div>
+
+        {/* ── Mobile: Vertical stack ── */}
+        <div className="md:hidden space-y-5">
+          {steps.map((step, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+            >
+              <div className={`rounded-2xl border ${step.borderColor} bg-card/60 backdrop-blur-md p-5`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-full ${step.bgGlow} border ${step.borderColor} flex items-center justify-center shrink-0`}>
+                    <span className={step.color}>{step.icon}</span>
+                  </div>
+                  <div>
+                    <div className={`text-xs font-bold ${step.color} uppercase tracking-[0.2em]`}>
+                      {t('landing.step')} {step.step}
+                    </div>
+                    <h3 className="text-base font-bold font-heading text-foreground">{step.title}</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-4">{step.description}</p>
+                {step.visual}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

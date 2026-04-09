@@ -70,8 +70,8 @@ export function NotificationListener() {
 
       console.log('[NotificationListener] ✅ Subscribed to channel: traffic');
 
-      // Exact match for Laravel's fully qualified namespace
-      channel.listen('.App\\Events\\IncidentCreated', (data: any) => {
+      // Match the custom broadcastAs() name
+      channel.listen('.IncidentCreated', (data: any) => {
         console.log('[NotificationListener] 🔔 IncidentCreated received:', data);
 
         const currentT = tRef.current;
@@ -128,7 +128,7 @@ export function NotificationListener() {
         );
       });
 
-      channel.listen('.App\\Events\\PredictionReceived', (data: any) => {
+      channel.listen('.PredictionReceived', (data: any) => {
         console.log('[NotificationListener] 🧠 PredictionReceived:', data);
 
         const currentT = tRef.current;
@@ -168,8 +168,8 @@ export function NotificationListener() {
     return () => {
       try {
         if (channel) {
-          channel.stopListening('.App\\Events\\IncidentCreated');
-          channel.stopListening('.App\\Events\\PredictionReceived');
+          channel.stopListening('.IncidentCreated');
+          channel.stopListening('.PredictionReceived');
         }
         console.log('[NotificationListener] 🔌 Cleanup listeners');
       } catch {}

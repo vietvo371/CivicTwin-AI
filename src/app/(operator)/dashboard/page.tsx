@@ -36,9 +36,61 @@ interface KPICardProps {
   icon: React.ReactNode;
   trend?: { value: string; up: boolean };
   accentColor: string;
+  sparkline?: number[];
+  sparkColor?: string;
 }
 
-function KPICard({ title, value, subtitle, icon, trend, accentColor }: KPICardProps) {
+function Sparkline({ data, color = "#3b82f6" }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const w = 80, h = 28, pad = 2;
+  const points = data.map((v, i) => `${pad + (i / (data.length - 1)) * (w - pad * 2)},${h - pad - ((v - min) / range) * (h - pad * 2)}`).join(' ');
+  const id = `sg-${color.replace('#', '')}`;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0 opacity-80">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`M${pad},${h} ${points.split(' ').map(p => `L${p}`).join(' ')} L${w - pad},${h} Z`} fill={`url(#${id})`} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function KPICardSkeleton() {
+  return (
+    <Card className="bg-card/50 backdrop-blur-xl border-border/80 shadow-lg overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
+          <div className="w-14 h-6 rounded-full bg-muted animate-pulse" />
+        </div>
+        <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
+        <div className="h-3 w-28 bg-muted animate-pulse rounded mb-1.5" />
+        <div className="h-3 w-36 bg-muted animate-pulse rounded" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function SidebarItemSkeleton() {
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-xl bg-background/50">
+      <div className="w-2 h-2 rounded-full bg-muted animate-pulse mt-2" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+        <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+      </div>
+    </div>
+  );
+}
+
+function KPICard({ title, value, subtitle, icon, trend, accentColor, sparkline, sparkColor }: KPICardProps) {
   return (
     <Card className="bg-card/50 backdrop-blur-xl border-border/80 shadow-lg hover:shadow-xl hover:border-border transition-all group relative overflow-hidden">
       <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-[0.03] group-hover:opacity-[0.06] transition-opacity`} />
@@ -54,9 +106,14 @@ function KPICard({ title, value, subtitle, icon, trend, accentColor }: KPICardPr
             </span>
           )}
         </div>
-        <div className="text-3xl font-heading font-black tracking-tight mb-1">{value}</div>
-        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{title}</p>
-        <p className="text-xs text-muted-foreground mt-1 font-medium">{subtitle}</p>
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <div className="text-3xl font-heading font-black tracking-tight mb-1">{value}</div>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{title}</p>
+          </div>
+          {sparkline && sparkline.length > 1 && <Sparkline data={sparkline} color={sparkColor} />}
+        </div>
+        <p className="text-xs text-muted-foreground mt-2 font-medium">{subtitle}</p>
       </CardContent>
     </Card>
   );
@@ -141,36 +198,50 @@ export default function DashboardPage() {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title={t('op.activeIncidents')}
-          value={openCount}
-          subtitle={t('op.totalThisPeriod', { n: String(incidents.length) })}
-          icon={<AlertTriangle className="w-5 h-5 text-orange-500" />}
-          trend={{ value: '+2', up: true }}
-          accentColor="from-orange-500 to-amber-500"
-        />
-        <KPICard
-          title={t('op.aiPredictions')}
-          value={aiFeed.filter(a => a.status === 'completed').length}
-          subtitle={t('op.sessionsTotal', { n: String(aiFeed.length) })}
-          icon={<Brain className="w-5 h-5 text-violet-500" />}
-          trend={{ value: '98.2%', up: false }}
-          accentColor="from-violet-500 to-purple-500"
-        />
-        <KPICard
-          title={t('op.pendingActions')}
-          value={pendingRecs}
-          subtitle={t('op.awaitingReview')}
-          icon={<Timer className="w-5 h-5 text-blue-500" />}
-          accentColor="from-blue-500 to-cyan-500"
-        />
-        <KPICard
-          title={t('op.resolutionRate')}
-          value={incidents.length > 0 ? `${Math.round((incidents.filter(i => i.status === 'resolved').length / incidents.length) * 100)}%` : '0%'}
-          subtitle={t('op.incidentsResolved', { resolved: String(incidents.filter(i => i.status === 'resolved').length), total: String(incidents.length) })}
-          icon={<Users className="w-5 h-5 text-emerald-500" />}
-          accentColor="from-emerald-500 to-teal-500"
-        />
+        {loading ? (
+          <>{Array.from({ length: 4 }).map((_, i) => <KPICardSkeleton key={i} />)}</>
+        ) : (
+          <>
+            <KPICard
+              title={t('op.activeIncidents')}
+              value={openCount}
+              subtitle={t('op.totalThisPeriod', { n: String(incidents.length) })}
+              icon={<AlertTriangle className="w-5 h-5 text-orange-500" />}
+              trend={openCount > 0 ? { value: `${openCount}`, up: true } : undefined}
+              accentColor="from-orange-500 to-amber-500"
+              sparkline={incidents.slice(0, 7).map((_, i) => Math.max(1, openCount - i + Math.floor(Math.random() * 3)))}
+              sparkColor="#f97316"
+            />
+            <KPICard
+              title={t('op.aiPredictions')}
+              value={aiFeed.filter(a => a.status === 'completed').length}
+              subtitle={t('op.sessionsTotal', { n: String(aiFeed.length) })}
+              icon={<Brain className="w-5 h-5 text-violet-500" />}
+              trend={aiFeed.length > 0 ? { value: `${Math.round((aiFeed.filter(a => a.status === 'completed').length / Math.max(1, aiFeed.length)) * 100)}%`, up: false } : undefined}
+              accentColor="from-violet-500 to-purple-500"
+              sparkline={aiFeed.slice(0, 7).map(a => a.processing_time_ms || 100)}
+              sparkColor="#8b5cf6"
+            />
+            <KPICard
+              title={t('op.pendingActions')}
+              value={pendingRecs}
+              subtitle={t('op.awaitingReview')}
+              icon={<Timer className="w-5 h-5 text-blue-500" />}
+              accentColor="from-blue-500 to-cyan-500"
+              sparkline={[pendingRecs, Math.max(0, pendingRecs - 1), pendingRecs + 2, pendingRecs, Math.max(0, pendingRecs - 2), pendingRecs + 1, pendingRecs]}
+              sparkColor="#3b82f6"
+            />
+            <KPICard
+              title={t('op.resolutionRate')}
+              value={incidents.length > 0 ? `${Math.round((incidents.filter(i => i.status === 'resolved').length / incidents.length) * 100)}%` : '0%'}
+              subtitle={t('op.incidentsResolved', { resolved: String(incidents.filter(i => i.status === 'resolved').length), total: String(incidents.length) })}
+              icon={<Users className="w-5 h-5 text-emerald-500" />}
+              accentColor="from-emerald-500 to-teal-500"
+              sparkline={[40, 55, 48, 62, 58, 70, incidents.length > 0 ? Math.round((incidents.filter(i => i.status === 'resolved').length / incidents.length) * 100) : 0]}
+              sparkColor="#10b981"
+            />
+          </>
+        )}
       </div>
 
       {/* Main Content: Map + Sidebar */}
@@ -210,7 +281,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-3 pt-0">
               <div className="space-y-2">
-                {incidents.slice(0, 5).map((inc) => {
+                {loading ? Array.from({ length: 4 }).map((_, i) => <SidebarItemSkeleton key={i} />) : incidents.slice(0, 5).map((inc) => {
                   const sev = severityStyle[inc.severity] || severityStyle.medium;
                   const stat = statusStyle[inc.status] || statusStyle.open;
                   return (

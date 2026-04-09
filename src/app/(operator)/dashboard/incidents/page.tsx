@@ -38,15 +38,23 @@ export default function IncidentsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: 'all', severity: 'all' });
   const [createOpen, setCreateOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 15;
 
   const fetchIncidents = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('per_page', String(perPage));
       if (filter.status !== 'all') params.set('status', filter.status);
       if (filter.severity !== 'all') params.set('severity', filter.severity);
       const res = await api.get(`/incidents?${params}`);
       setIncidents(res.data.data || []);
+      setTotal(res.data.total || res.data.data?.length || 0);
+      setLastPage(res.data.last_page || 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,7 +62,8 @@ export default function IncidentsPage() {
     }
   };
 
-  useEffect(() => { fetchIncidents(); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+  useEffect(() => { fetchIncidents(); }, [filter, page]);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -176,9 +185,31 @@ export default function IncidentsPage() {
       {/* Table Section */}
       <Card className="overflow-hidden bg-card/40 backdrop-blur-xl shadow-2xl">
         {loading ? (
-          <div className="p-16 text-center flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
-            <span className="font-medium text-muted-foreground animate-pulse">{t('op.loadingIncidents')}</span>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-card/80">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[80px]">{t('common.id')}</TableHead>
+                  <TableHead>{t('op.incidentRefCol')}</TableHead>
+                  <TableHead className="text-center">{t('common.severity')}</TableHead>
+                  <TableHead className="text-center">{t('common.status')}</TableHead>
+                  <TableHead>{t('op.timestamp')}</TableHead>
+                  <TableHead className="text-right">{t('op.action')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-8 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell><div className="space-y-2"><div className="h-4 w-40 bg-muted animate-pulse rounded" /><div className="h-3 w-24 bg-muted animate-pulse rounded" /></div></TableCell>
+                    <TableCell className="text-center"><div className="h-5 w-16 bg-muted animate-pulse rounded-full mx-auto" /></TableCell>
+                    <TableCell className="text-center"><div className="h-5 w-16 bg-muted animate-pulse rounded-full mx-auto" /></TableCell>
+                    <TableCell><div className="h-4 w-28 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell className="text-right"><div className="h-8 w-8 bg-muted animate-pulse rounded ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : incidents.length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center gap-3">
@@ -245,6 +276,23 @@ export default function IncidentsPage() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination */}
+            {lastPage > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  {((page - 1) * perPage) + 1}–{Math.min(page * perPage, total)} / {total}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                    ←
+                  </Button>
+                  <span className="text-sm font-medium px-2 tabular-nums">{page} / {lastPage}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(lastPage, p + 1))} disabled={page >= lastPage}>
+                    →
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>

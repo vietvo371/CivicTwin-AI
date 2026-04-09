@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/lib/i18n';
-import { Github, Linkedin, Mail, ExternalLink } from 'lucide-react';
+import { Github, Linkedin, Mail, ExternalLink, Trophy } from 'lucide-react';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -36,14 +36,30 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="relative z-10 mt-20 border-t border-border/50 bg-background/80 backdrop-blur-lg">
+    <footer className="relative z-10 mt-20 border-t border-border/50 bg-gradient-to-b from-background via-background to-background/80">
       {/* Gradient top border */}
       <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
+      {/* Subtle grid bg */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-8">
+        {/* Hackathon Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex justify-center mb-12"
+        >
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-widest">
+            <Trophy className="w-3.5 h-3.5" />
+            {t('landing.hackathonBadge')}
+          </div>
+        </motion.div>
+
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
-          
+
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-3 group">
@@ -64,7 +80,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}
-                  className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-border text-muted-foreground hover:text-foreground transition-all"
+                  className="p-2.5 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-border text-muted-foreground hover:text-foreground transition-all hover:shadow-lg hover:shadow-blue-500/5"
                 >
                   {s.icon}
                 </a>

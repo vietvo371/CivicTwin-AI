@@ -11,6 +11,7 @@ import {
   LogOut, Menu, X, Activity, FlaskConical, Camera,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NotificationBell } from './NotificationBell';
@@ -77,28 +78,44 @@ export default function Sidebar() {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const label = t(item.labelKey);
           
-          return (
+          const linkEl = (
             <Link
               key={item.href}
               href={item.href}
-              title={collapsed ? label : undefined}
               className={`flex items-center gap-3 px-3 min-h-[44px] rounded-xl transition-all duration-200 group cursor-pointer ${
-                isActive 
-                  ? 'bg-primary/10 text-primary font-semibold' 
+                isActive
+                  ? 'bg-primary/10 text-primary font-semibold'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground font-medium'
               }`}
             >
               <item.icon className={`w-5 h-5 shrink-0 transition-transform ${isActive ? 'scale-110 text-primary' : 'group-hover:scale-110'}`} />
-              
+
               <span className={`text-sm whitespace-nowrap transition-all duration-200 ${collapsed ? 'opacity-0 w-0 hidden' : 'opacity-100 flex-1'}`}>
                 {label}
               </span>
-              
+
               {isActive && !collapsed && (
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               )}
             </Link>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger render={<Link href={item.href} />} className={`flex items-center gap-3 px-3 min-h-[44px] rounded-xl transition-all duration-200 group cursor-pointer ${
+                  isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground font-medium'
+                }`}>
+                  <item.icon className={`w-5 h-5 shrink-0 transition-transform ${isActive ? 'scale-110 text-primary' : 'group-hover:scale-110'}`} />
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return linkEl;
         })}
       </nav>
 

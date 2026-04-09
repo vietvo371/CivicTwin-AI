@@ -18,7 +18,20 @@ const DensityHistogram = dynamic(() => import('@/components/AnalyticsCharts').th
 const TypeBarChart = dynamic(() => import('@/components/AnalyticsCharts').then(m => m.TypeBarChart), { ssr: false, loading: () => <ChartSkeleton /> });
 
 function ChartSkeleton() {
-  return <div className="h-[240px] w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+  return (
+    <div className="h-[240px] w-full p-4 space-y-3">
+      <div className="flex items-end gap-2 h-full">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex-1 bg-muted animate-pulse rounded-t" style={{ height: `${30 + Math.random() * 60}%`, animationDelay: `${i * 100}ms` }} />
+        ))}
+      </div>
+      <div className="flex justify-between">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-2 w-10 bg-muted animate-pulse rounded" />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
