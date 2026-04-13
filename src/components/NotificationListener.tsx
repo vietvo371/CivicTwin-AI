@@ -9,19 +9,48 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
+const isDev = process.env.NODE_ENV === 'development';
+
+/** Unified role check - returns the appropriate link prefix based on user roles */
+function getRoleLink(roles: string[], incidentId?: string | number): string {
+  if (!incidentId) return '/alerts';
+
+  const roleSet = new Set(roles);
+
+  if (
+    roleSet.has('traffic_operator') ||
+    roleSet.has('super_admin') ||
+    roleSet.has('city_admin') ||
+    roleSet.has('urban_planner')
+  ) {
+    return `/dashboard/incidents/${incidentId}`;
+  }
+
+  if (roleSet.has('emergency')) {
+    return `/emergency/incidents/${incidentId}`;
+  }
+
+  return '/map';
+}
+
+/** Check if user has a specific role */
+function hasRole(roles: string[], ...roleNames: string[]): boolean {
+  return roleNames.some(role => roles.includes(role));
+}
+
 export function NotificationListener() {
   const { addNotification, seedNotifications, seeded } = useNotifications();
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  
-  // Use refs so the WebSocket listener always has the latest values
-  // without needing to re-subscribe.
+
   const tRef = useRef(t);
   tRef.current = t;
-  
+
   const userRef = useRef(user);
   userRef.current = user;
+
+  const subscribedRef = useRef(false);
 
   // Seed notifications from API on first mount (API filters by role automatically)
   useEffect(() => {
@@ -31,15 +60,12 @@ export function NotificationListener() {
         const res = await api.get('/notifications?per_page=20');
         const notifications = res.data.data || [];
 
-        // Determine link based on user role
-        const role = user?.roles?.[0] || 'citizen';
-        const linkPrefix = role === 'citizen' ? '/map' 
-          : (role === 'emergency' ? '/emergency/incidents' : '/dashboard/incidents');
+        const roles = user.roles || [];
 
         const items: NotifType[] = notifications.map((notif: any) => {
           const type = notif.type === 'incident_created' ? 'incident' : 'system';
           const incidentId = notif.data?.id || notif.data?.incident_id;
-          
+
           return {
             id: notif.id,
             title: notif.title || 'Notification',
@@ -48,7 +74,7 @@ export function NotificationListener() {
             severity: notif.data?.severity || 'medium',
             timestamp: new Date(notif.created_at),
             read: !!notif.read,
-            link: role === 'citizen' ? `/map` : (incidentId ? `${linkPrefix}/${incidentId}` : linkPrefix),
+            link: getRoleLink(roles, incidentId),
           };
         });
         seedNotifications(items);
@@ -61,6 +87,8 @@ export function NotificationListener() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (subscribedRef.current) return;
+    subscribedRef.current = true;
 
     let channel: any;
 
@@ -68,36 +96,27 @@ export function NotificationListener() {
       const echo = getEcho();
       channel = echo.channel('traffic');
 
-      console.log('[NotificationListener] ✅ Subscribed to channel: traffic');
+      if (isDev) {
+        console.log('[NotificationListener] ✅ Subscribed to channel: traffic');
+      }
 
-      // Match the custom broadcastAs() name
       channel.listen('.IncidentCreated', (data: any) => {
-        console.log('[NotificationListener] 🔔 IncidentCreated received:', data);
+        if (isDev) {
+          console.log('[NotificationListener] 🔔 IncidentCreated received:', data);
+        }
 
         const currentT = tRef.current;
         const currentUser = userRef.current;
 
-        // Citizens don't need operator-level incident notifications
-        const role = currentUser?.roles?.[0] || '';
-        if (role === 'citizen') return;
-        
         const title = data.title || currentT('notifications.newIncident');
         const rawSeverity = data.severity || 'medium';
         const rawType = data.type || 'other';
-        
+
         const translatedType = currentT(`enums.incidentType.${rawType}`);
         const translatedSeverity = currentT(`enums.incidentSeverity.${rawSeverity}`);
-        
-        // Determine link based on user role
-        let link = `/alerts`;
-        if (data.id && currentUser) {
-          const roles = currentUser.roles || [];
-          if (roles.includes('traffic_operator') || roles.includes('super_admin') || roles.includes('city_admin') || roles.includes('urban_planner')) {
-            link = `/dashboard/incidents/${data.id}`;
-          } else if (roles.includes('emergency')) {
-            link = `/emergency/incidents/${data.id}`;
-          }
-        }
+
+        const roles = currentUser?.roles || [];
+        const link = getRoleLink(roles, data.id);
 
         addNotification({
           title,
@@ -109,6 +128,9 @@ export function NotificationListener() {
           severity: rawSeverity,
           link,
         });
+
+        // Citizens only see toast for high/critical severity nearby alerts
+        if (hasRole(roles, 'citizen') && rawSeverity !== 'critical' && rawSeverity !== 'high') return;
 
         const toastFn = rawSeverity === 'critical' ? toast.error
           : rawSeverity === 'high' ? toast.warning
@@ -129,14 +151,16 @@ export function NotificationListener() {
       });
 
       channel.listen('.PredictionReceived', (data: any) => {
-        console.log('[NotificationListener] 🧠 PredictionReceived:', data);
+        if (isDev) {
+          console.log('[NotificationListener] 🧠 PredictionReceived:', data);
+        }
 
         const currentT = tRef.current;
         const currentUser = userRef.current;
 
+        const roles = currentUser?.roles || [];
         // Only operators/admins/planners see AI prediction notifications
-        const role = currentUser?.roles?.[0] || '';
-        if (role === 'citizen' || role === 'emergency') return;
+        if (hasRole(roles, 'citizen', 'emergency')) return;
 
         const edgeCount = data.edges?.length || 0;
         const title = currentT('notifications.newPrediction');
@@ -156,23 +180,24 @@ export function NotificationListener() {
         );
       });
 
-      // Debug: listen to ALL events on channel
-      channel.listenToAll((event: string, data: any) => {
-        console.log(`[NotificationListener] 📡 Raw event: ${event}`, data);
-      });
-
     } catch (err) {
       console.error('[NotificationListener] ❌ Failed to connect:', err);
+      subscribedRef.current = false;
     }
 
     return () => {
-      try {
-        if (channel) {
+      if (channel) {
+        try {
           channel.stopListening('.IncidentCreated');
           channel.stopListening('.PredictionReceived');
+          channel.leave();
+        } catch (err) {
+          console.warn('[NotificationListener] ⚠️ Cleanup error:', err);
         }
-        console.log('[NotificationListener] 🔌 Cleanup listeners');
-      } catch {}
+      }
+      if (isDev) {
+        console.log('[NotificationListener] 🔌 Cleanup complete');
+      }
     };
   }, []);
 

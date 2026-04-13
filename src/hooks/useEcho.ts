@@ -32,15 +32,18 @@ export function useEcho<T = any>(
 
     let echoChannel: any;
 
+    // Keep a reference to the exact handler so stopListening only
+    // removes THIS binding, not every binding for the same event
+    // (other components like NotificationListener share the channel).
+    const handler = (data: T) => {
+      callbackRef.current(data);
+    };
+
     try {
       const echo = getEcho();
       echoChannel = echo.channel(channel);
 
-      // Laravel broadcasts events with the class name prefix
-      // e.g., '.IncidentCreated' or 'App\\Events\\IncidentCreated'
-      echoChannel.listen(`.${event}`, (data: T) => {
-        callbackRef.current(data);
-      });
+      echoChannel.listen(`.${event}`, handler);
     } catch (err) {
       console.warn(`[useEcho] Failed to connect to channel "${channel}":`, err);
     }
@@ -48,7 +51,7 @@ export function useEcho<T = any>(
     return () => {
       try {
         if (echoChannel) {
-          echoChannel.stopListening(`.${event}`);
+          echoChannel.stopListening(`.${event}`, handler);
         }
       } catch {
         // Ignore cleanup errors
@@ -81,14 +84,20 @@ export function useEchoMulti(
     let echoChannel: any;
     const eventNames = Object.keys(eventsRef.current);
 
+    // Store handler references so stopListening only removes
+    // these specific bindings, not those from other components.
+    const handlers: Record<string, (data: any) => void> = {};
+
     try {
       const echo = getEcho();
       echoChannel = echo.channel(channel);
 
       eventNames.forEach((eventName) => {
-        echoChannel.listen(`.${eventName}`, (data: any) => {
+        const handler = (data: any) => {
           eventsRef.current[eventName]?.(data);
-        });
+        };
+        handlers[eventName] = handler;
+        echoChannel.listen(`.${eventName}`, handler);
       });
     } catch (err) {
       console.warn(`[useEchoMulti] Failed to connect to channel "${channel}":`, err);
@@ -98,7 +107,7 @@ export function useEchoMulti(
       try {
         if (echoChannel) {
           eventNames.forEach((eventName) => {
-            echoChannel.stopListening(`.${eventName}`);
+            echoChannel.stopListening(`.${eventName}`, handlers[eventName]);
           });
         }
       } catch {
