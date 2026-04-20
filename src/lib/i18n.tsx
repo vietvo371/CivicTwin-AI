@@ -68,3 +68,19 @@ export function useTranslation() {
   if (!ctx) throw new Error('useTranslation must be inside I18nProvider');
   return ctx;
 }
+
+/**
+ * Standalone translation function — usable outside React components (e.g. api.ts).
+ * Reads locale from localStorage at call time.
+ */
+export function t(key: string, params?: Record<string, string | number>): string {
+  const locale = (localStorage?.getItem('civictwin-locale') as Locale) || 'en';
+  let value = getNestedValue(translations[locale] ?? translations['en'], key);
+  if (typeof value !== 'string') return key;
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      value = value.replace(`{${k}}`, String(v));
+    });
+  }
+  return value;
+}

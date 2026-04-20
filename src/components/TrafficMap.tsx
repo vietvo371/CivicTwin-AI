@@ -9,15 +9,17 @@ import { useTranslation } from '@/lib/i18n';
 import { useEcho } from '@/hooks/useEcho';
 import { AlertTriangle, AlertCircle, RefreshCw, Activity, Menu, X, Search, Navigation, Construction, CarFront, Gauge, MapPin } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import './TrafficMap.css';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
 interface TrafficMapProps {
   isPublic?: boolean;
   hideOverlays?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
-export default function TrafficMap({ isPublic = false, hideOverlays = false }: TrafficMapProps) {
+export default function TrafficMap({ isPublic = false, hideOverlays = false, onMapClick }: TrafficMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const { theme, resolvedTheme } = useTheme();
@@ -61,6 +63,55 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false }: T
     if (data.latitude && data.longitude) {
       setMapIncidents(prev => [data, ...prev]);
     }
+  });
+
+  // Real-time: individual edge metric changes (congestion_level, status)
+  useEcho<any>('traffic', 'EdgeMetricsUpdated', (data) => {
+    if (!map.current || !geojsonDataRef.current) return;
+
+    const edgeId = data.id;
+
+    // Update GeoJSON ref
+    const feature = geojsonDataRef.current.features.find(
+      (f: any) => f.properties.id === edgeId
+    );
+    if (!feature) return;
+
+    feature.properties.current_density = data.current_density;
+    feature.properties.current_speed_kmh = data.current_speed_kmh;
+    feature.properties.current_flow = data.current_flow;
+    feature.properties.congestion_level = data.congestion_level;
+    feature.properties.status = data.status;
+
+    // Use Mapbox feature state to trigger opacity transition animation
+    map.current.setFeatureState(
+      { source: 'traffic-edges', id: edgeId },
+      { updated: true, density: data.current_density }
+    );
+    // Reset animation state after 1s
+    setTimeout(() => {
+      map.current?.setFeatureState(
+        { source: 'traffic-edges', id: edgeId },
+        { updated: false }
+      );
+    }, 1000);
+
+    const source = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
+    if (source) {
+      source.setData(geojsonDataRef.current);
+    }
+
+    // Recalculate KPIs
+    let congested = 0;
+    let totalDen = 0;
+    const count = geojsonDataRef.current.features.length;
+    geojsonDataRef.current.features.forEach((f: any) => {
+      const den = f.properties.current_density || 0;
+      totalDen += den;
+      if (den > 0.6) congested++;
+    });
+    setCongestedCount(congested);
+    setAvgDensity(count > 0 ? totalDen / count : 0);
   });
 
   // Real-time: update traffic density coloring and KPIs
@@ -243,7 +294,21 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false }: T
                   0.6, '#f97316',
                   0.8, '#ef4444',
                   1.0, '#881337'
-                ]
+                ],
+                // Smooth transition when density value changes
+                'line-color-transition': {
+                  duration: 800,
+                  delay: 0,
+                },
+                'line-opacity': [
+                  'case',
+                  ['boolean', ['feature-state', 'updated'], false],
+                  0.85,
+                  1.0,
+                ],
+                'line-opacity-transition': {
+                  duration: 400,
+                },
               }
             });
           }
@@ -257,6 +322,13 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false }: T
         hideSymbols();
         addLayers();
         map.current.on('style.load', handleStyleLoad);
+
+        // Map click: expose lat/lng for route origin/destination selection
+        if (onMapClick) {
+          map.current.on('click', (e) => {
+            onMapClick(e.lngLat.lat, e.lngLat.lng);
+          });
+        }
 
         // Setup popups on hover — use pre-translated labels
         const speedLabel = t('trafficMap.speed');

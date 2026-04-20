@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
+import { t } from './i18n';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -45,12 +46,12 @@ api.interceptors.response.use(
   },
   (error: AxiosError<ApiResponse>) => {
     if (!error.response) {
-      toast.error('Network error. Please check your connection.');
+      toast.error(t('errors.networkError'));
       return Promise.reject(error);
     }
 
     const { status, data } = error.response;
-    const message = data?.message || 'An error occurred.';
+    const message = data?.message || t('errors.serverError');
 
     switch (status) {
       case 401:

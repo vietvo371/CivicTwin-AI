@@ -62,8 +62,8 @@ export default function SettingsPage() {
               <Select defaultValue="vi">
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vi">Tiếng Việt</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="vi">{t('settings.vietnamese')}</SelectItem>
+                  <SelectItem value="en">{t('settings.english')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -96,9 +96,9 @@ export default function SettingsPage() {
               <Select defaultValue="gnn-v2.1">
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gnn-v2.1">GNN v2.1 (Spatial Graph)</SelectItem>
-                  <SelectItem value="lstm-v1.4">LSTM v1.4 (Time Series)</SelectItem>
-                  <SelectItem value="ensemble">Ensemble (GNN + LSTM)</SelectItem>
+                  <SelectItem value="gnn-v2.1">{t('settings.modelGnn')}</SelectItem>
+                  <SelectItem value="lstm-v1.4">{t('settings.modelLstm')}</SelectItem>
+                  <SelectItem value="ensemble">{t('settings.modelEnsemble')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

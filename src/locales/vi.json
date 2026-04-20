@@ -28,7 +28,9 @@
     "back": "Quay lại",
     "toggleTheme": "Bật/Tắt giao diện tối",
     "severity": "Mức độ",
-    "viewDetails": "Xem chi tiết"
+    "viewDetails": "Xem chi tiết",
+    "minutesShort": "phút",
+    "km": "km"
   },
   "navbar": {
     "liveMap": "Bản đồ trực tiếp",
@@ -214,7 +216,10 @@
     "returnHome": "Quay về trang chủ",
     "authRequired": "Yêu cầu đăng nhập",
     "authRequiredDesc": "Bạn cần đăng nhập để báo cáo sự cố.",
-    "signIn": "Đăng nhập"
+    "signIn": "Đăng nhập",
+    "namePlaceholder": "Họ và tên",
+    "emailPlaceholder": "email@example.com",
+    "phonePlaceholder": "Số điện thoại"
   },
   "admin": {
     "title": "Quản trị hệ thống",
@@ -380,6 +385,11 @@
     "generalDesc": "Cấu hình hệ thống cơ bản",
     "systemName": "Tên hệ thống",
     "defaultLanguage": "Ngôn ngữ mặc định",
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "modelGnn": "GNN v2.1 (Đồ thị không gian)",
+    "modelLstm": "LSTM v1.4 (Chuỗi thời gian)",
+    "modelEnsemble": "Kết hợp (GNN + LSTM)",
     "mapCenterLat": "Tâm bản đồ (Vĩ độ)",
     "mapCenterLng": "Tâm bản đồ (Kinh độ)",
     "aiEngine": "AI Engine",
@@ -708,7 +718,19 @@
     "signalsCleared": "Tín hiệu giao thông đã giải phóng",
     "intersections": "{n} nút giao",
     "computingRoute": "Đang tính toán tuyến tối ưu...",
-    "clearingSignals": "Giải phóng tín hiệu giao thông dọc tuyến"
+    "clearingSignals": "Giải phóng tín hiệu giao thông dọc tuyến",
+    "mapPinSet": "Đã đặt ghim bản đồ — bấm lại để chọn điểm đến",
+    "setBothLocations": "Vui lòng đặt cả điểm xuất phát và điểm đến (bấm bản đồ hoặc tìm kiếm)",
+    "calculatingRoute": "Đang tính tuyến...",
+    "calculateRoute": "Tính tuyến ưu tiên",
+    "demoMode": "Chế độ demo — chưa có dữ liệu PostGIS",
+    "dijkstraDesc": "Định tuyến Dijkstra với tránh ùn tắc",
+    "quickSelect": "Chọn nhanh",
+    "clickOrSearch": "bấm bản đồ hoặc tìm kiếm",
+    "clickOrSearchHint": "Bấm bản đồ hoặc tìm kiếm bên dưới",
+    "routeCalculated": "Tuyến đã được tính thành công",
+    "routeCalculatedDemo": "Tuyến đã tính (chế độ demo)",
+    "routeError": "Tính tuyến thất bại"
   },
   "emergencySidebar": {
     "title": "Khẩn cấp",
@@ -901,5 +923,9 @@
     "newPrediction": "Dự đoán AI mới",
     "predictionMessage": "Dự đoán cho {edgeCount} đoạn đường",
     "predictionCompleted": "Phân tích AI hoàn tất"
+  },
+  "errors": {
+    "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
+    "serverError": "Đã xảy ra lỗi. Vui lòng thử lại."
   }
 }

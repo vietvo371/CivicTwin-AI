@@ -28,7 +28,9 @@
     "back": "Go back",
     "toggleTheme": "Toggle Dark Mode",
     "severity": "Severity",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "minutesShort": "min",
+    "km": "km"
   },
   "navbar": {
     "liveMap": "Live Map",
@@ -214,7 +216,10 @@
     "returnHome": "Return to Home",
     "authRequired": "Authentication Required",
     "authRequiredDesc": "You must be signed in to report an incident.",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "namePlaceholder": "Full name",
+    "emailPlaceholder": "user@example.com",
+    "phonePlaceholder": "Phone number"
   },
   "admin": {
     "title": "System Administration",
@@ -380,6 +385,11 @@
     "generalDesc": "Basic system configuration",
     "systemName": "System Name",
     "defaultLanguage": "Default Language",
+    "vietnamese": "Vietnamese",
+    "english": "English",
+    "modelGnn": "GNN v2.1 (Spatial Graph)",
+    "modelLstm": "LSTM v1.4 (Time Series)",
+    "modelEnsemble": "Ensemble (GNN + LSTM)",
     "mapCenterLat": "Default Map Center (Lat)",
     "mapCenterLng": "Default Map Center (Lng)",
     "aiEngine": "AI Engine",
@@ -708,7 +718,19 @@
     "signalsCleared": "Traffic Signals Cleared",
     "intersections": "{n} intersections",
     "computingRoute": "Computing Optimal Route...",
-    "clearingSignals": "Clearing traffic signals along the path"
+    "clearingSignals": "Clearing traffic signals along the path",
+    "mapPinSet": "Map pin set — click map again to set destination",
+    "setBothLocations": "Please set both origin and destination (click map or search)",
+    "calculatingRoute": "Calculating route...",
+    "calculateRoute": "Calculate Priority Route",
+    "demoMode": "Demo mode — no PostGIS data seeded",
+    "dijkstraDesc": "Dijkstra shortest-path routing with congestion avoidance",
+    "quickSelect": "Quick select",
+    "clickOrSearch": "click map or search",
+    "clickOrSearchHint": "Click map or search below",
+    "routeCalculated": "Route calculated successfully",
+    "routeCalculatedDemo": "Route calculated (demo mode)",
+    "routeError": "Failed to calculate route"
   },
   "emergencySidebar": {
     "title": "Emergency",
@@ -901,5 +923,9 @@
     "newPrediction": "New AI Prediction",
     "predictionMessage": "Prediction for {edgeCount} road segments",
     "predictionCompleted": "AI analysis completed"
+  },
+  "errors": {
+    "networkError": "Network error. Please check your connection.",
+    "serverError": "An error occurred. Please try again."
   }
 }

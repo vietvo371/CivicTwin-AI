@@ -195,17 +195,17 @@ export default function UsersPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('adminUsers.fullName')} *</Label>
-          <Input placeholder="Nguyễn Văn A" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+          <Input placeholder={t('auth.namePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email *</Label>
-          <Input type="email" placeholder="user@civictwin.local" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('common.email')} *</Label>
+          <Input type="email" placeholder={t('auth.emailPlaceholder')} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('common.phone')}</Label>
-          <Input placeholder="0905 xxx xxx" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+          <Input placeholder={t('auth.phonePlaceholder')} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
         </div>
         <div className="space-y-2">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, t as translate } from '@/lib/i18n';
 import {
   Brain, CheckCircle, XCircle, Clock, Activity, ChevronDown,
   Cpu, Zap, Play, Loader2, AlertTriangle, MapPin, Gauge, ShieldCheck, RefreshCw
@@ -38,10 +38,10 @@ interface ModelInfo {
 }
 
 const severityConfig: Record<string, { color: string; bg: string; border: string; label: string }> = {
-  low: { color: 'text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Thấp' },
-  medium: { color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: 'Trung bình' },
-  high: { color: 'text-orange-600', bg: 'bg-orange-500/10', border: 'border-orange-500/20', label: 'Cao' },
-  critical: { color: 'text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Nghiêm trọng' },
+  low: { color: 'text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: translate('enums.incidentSeverity.low') },
+  medium: { color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: translate('enums.incidentSeverity.medium') },
+  high: { color: 'text-orange-600', bg: 'bg-orange-500/10', border: 'border-orange-500/20', label: translate('enums.incidentSeverity.high') },
+  critical: { color: 'text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/20', label: translate('enums.incidentSeverity.critical') },
 };
 
 export default function PredictionsPage() {

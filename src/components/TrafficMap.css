@@ -1,0 +1,31 @@
+/* TrafficMap — Animation & Popup styles */
+
+/* Flash animation when an edge updates */
+@keyframes traffic-edge-flash {
+  0%   { opacity: 0.3; }
+  50%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+.traffic-edge-updated {
+  animation: traffic-edge-flash 0.6s ease-out;
+}
+
+/* Custom popup styles */
+.custom-popup .mapboxgl-popup-content {
+  border-radius: 0.75rem;
+  padding: 0;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3),
+              0 8px 10px -6px rgb(0 0 0 / 0.3);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--popover));
+}
+
+.custom-popup .mapboxgl-popup-tip {
+  border-top-color: hsl(var(--popover));
+}
+
+/* Smooth map loading */
+.mapboxgl-canvas {
+  transition: opacity 0.3s ease;
+}
