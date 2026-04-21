@@ -3,13 +3,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  ShieldCheck, Users, Database, LogOut, Settings, ActivitySquare
+import {
+  ShieldCheck, Users, Database, LogOut, Settings, ActivitySquare, LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useTranslation } from '@/lib/i18n';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { NotificationBell } from './NotificationBell';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ export default function AdminSidebar() {
     { name: t('nav.masterData'), href: '/admin/master', icon: Database },
     { name: t('nav.settings'), href: '/admin/settings', icon: Settings },
     { name: t('nav.logs'), href: '/admin/logs', icon: ActivitySquare },
+    { name: t('navbar.operatorDashboard'), href: '/dashboard', icon: LayoutDashboard },
   ];
 
   return (
@@ -63,15 +65,15 @@ export default function AdminSidebar() {
       <div className="p-4 border-t border-border flex flex-col gap-2 bg-muted/10">
         <div className="hidden lg:flex flex-col px-2 py-1 mb-2">
           <span className="text-xs font-semibold text-foreground truncate">{user?.name || 'Administrator'}</span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user?.roles?.[0] || 'admin'}</span>
+          <span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
+            {user?.roles?.[0] ? t(`enums.roles.${user.roles[0]}`) : 'Admin'}
+          </span>
         </div>
         
         <div className="flex items-center justify-center lg:justify-between px-2 pt-1 pb-2 gap-2">
-          <div className="hidden lg:flex items-center gap-2">
-            <LanguageSwitcher />
-            <ThemeToggle collapsed={false} />
-          </div>
-          <div className="flex lg:hidden flex-col items-center gap-2">
+          <span className="hidden lg:block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('sidebar.theme')}</span>
+          <div className="flex items-center gap-1">
+            <NotificationBell collapsed={false} />
             <LanguageSwitcher />
             <ThemeToggle collapsed={false} />
           </div>

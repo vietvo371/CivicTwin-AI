@@ -39,6 +39,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   const { t, locale } = useTranslation();
 
   const [loading, setLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // New UI States
@@ -306,13 +307,13 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
 
   // Add markers when incidents load or map becomes ready
   useEffect(() => {
-    if (!map.current || loading) return;
+    if (!map.current || !mapReady) return;
     mapIncidents.forEach(addIncidentMarker);
-  }, [mapIncidents, loading, addIncidentMarker]);
+  }, [mapIncidents, mapReady, addIncidentMarker]);
 
   // Focus on specific incident when navigated from notification
   useEffect(() => {
-    if (!focusIncidentId || !map.current || loading) return;
+    if (!focusIncidentId || !map.current || !mapReady) return;
     const inc = mapIncidents.find(i => i.id === focusIncidentId);
     if (!inc) return;
     const lat = inc.lat ?? inc.latitude ?? inc.location?.lat;
@@ -560,6 +561,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         hideSymbols();
         addLayers();
         map.current.on('style.load', handleStyleLoad);
+        setMapReady(true);
 
         // Map click: expose lat/lng for route origin/destination selection
         if (onMapClick) {

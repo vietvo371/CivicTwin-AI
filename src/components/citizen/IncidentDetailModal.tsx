@@ -67,41 +67,41 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
 
       {/* Sheet */}
       <div
-        className="relative w-full sm:max-w-lg bg-[#0f1117] border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-300 max-h-[90dvh] flex flex-col"
+        className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-300 max-h-[90dvh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle (mobile) */}
         <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
         >
-          <X className="w-4 h-4 text-white" />
+          <X className="w-4 h-4 text-foreground" />
         </button>
 
         {loading ? (
           <div className="flex-1 flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-muted border-t-foreground rounded-full animate-spin" />
           </div>
         ) : !data ? (
-          <div className="flex-1 flex items-center justify-center py-16 text-white/40 text-sm">
+          <div className="flex-1 flex items-center justify-center py-16 text-muted-foreground text-sm">
             Không tải được dữ liệu
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
             {/* Image gallery */}
             {images.length > 0 ? (
-              <div className="relative w-full h-52 bg-black shrink-0">
+              <div className="relative w-full h-52 bg-muted shrink-0">
                 <img
                   src={images[imgIdx]}
                   alt="incident"
                   className="w-full h-full object-cover opacity-90"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0f1117]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card" />
                 {images.length > 1 && (
                   <>
                     <button
@@ -129,8 +129,8 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
                 )}
               </div>
             ) : (
-              <div className="w-full h-28 bg-white/5 flex items-center justify-center shrink-0">
-                <ImageIcon className="w-8 h-8 text-white/20" />
+              <div className="w-full h-28 bg-muted/50 flex items-center justify-center shrink-0">
+                <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
               </div>
             )}
 
@@ -143,30 +143,30 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
                     <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sev.dot }} />
                     {data.severity}
                   </span>
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-white/50 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-full">
                     {TYPE_ICON[data.type] ?? TYPE_ICON.other}
                     {data.type}
                   </span>
-                  <span className="text-[11px] text-white/40 font-medium ml-auto">
+                  <span className="text-[11px] text-muted-foreground font-medium ml-auto">
                     {STATUS_LABEL[data.status] ?? data.status}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-white leading-tight">{data.title}</h2>
+                <h2 className="text-lg font-bold text-foreground leading-tight">{data.title}</h2>
                 {data.description && (
-                  <p className="text-sm text-white/60 mt-1.5 leading-relaxed">{data.description}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{data.description}</p>
                 )}
               </div>
 
               {/* Meta */}
-              <div className="flex flex-wrap gap-3 text-xs text-white/40 font-medium">
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-medium">
                 {data.location_name && (
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-white/30" />
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
                     {data.location_name}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 shrink-0 text-white/30" />
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
                   {new Date(data.created_at).toLocaleString('vi-VN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {(data.affected_edge_ids?.length ?? 0) > 0 && (
@@ -178,46 +178,46 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-white/8" />
+              <div className="border-t border-border" />
 
               {/* AI Prediction */}
               {data.prediction ? (
                 <div className="rounded-xl border border-purple-500/25 bg-purple-950/20 p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span className="text-sm font-bold text-white">Phân tích AI</span>
-                    <span className="ml-auto text-[10px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-md">
+                    <Brain className="w-4 h-4 text-purple-500 shrink-0" />
+                    <span className="text-sm font-bold text-foreground">Phân tích AI</span>
+                    <span className="ml-auto text-[10px] font-bold text-purple-500 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md">
                       {data.prediction.model_version ?? 'ST-GCN'}
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white/5 rounded-lg p-2.5 text-center">
-                      <div className="text-lg font-black text-white">
+                    <div className="bg-muted/60 rounded-lg p-2.5 text-center">
+                      <div className="text-lg font-black text-foreground">
                         {data.prediction.edges_count}
                       </div>
-                      <div className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mt-0.5">Đoạn phân tích</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">Đoạn phân tích</div>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-2.5 text-center">
-                      <div className={`text-lg font-black ${(data.prediction.max_density ?? 0) > 0.6 ? 'text-red-400' : 'text-yellow-400'}`}>
+                    <div className="bg-muted/60 rounded-lg p-2.5 text-center">
+                      <div className={`text-lg font-black ${(data.prediction.max_density ?? 0) > 0.6 ? 'text-red-500' : 'text-yellow-500'}`}>
                         {Math.round((data.prediction.max_density ?? 0) * 100)}%
                       </div>
-                      <div className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mt-0.5">Mật độ tối đa</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">Mật độ tối đa</div>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-2.5 text-center">
-                      <div className="text-lg font-black text-emerald-400">
+                    <div className="bg-muted/60 rounded-lg p-2.5 text-center">
+                      <div className="text-lg font-black text-emerald-500">
                         {Math.round((data.prediction.avg_confidence ?? 0) * 100)}%
                       </div>
-                      <div className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mt-0.5">Độ tin cậy</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">Độ tin cậy</div>
                     </div>
                   </div>
                   {data.prediction.processing_time_ms && (
-                    <p className="text-[10px] text-white/30 flex items-center gap-1">
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                       <Zap className="w-3 h-3" /> Xử lý trong {data.prediction.processing_time_ms}ms
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="rounded-xl border border-white/8 bg-white/3 p-4 flex items-center gap-3 text-white/30">
+                <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center gap-3 text-muted-foreground">
                   <Brain className="w-4 h-4 shrink-0" />
                   <span className="text-sm">Chưa có phân tích AI cho sự cố này</span>
                 </div>
@@ -226,16 +226,16 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
               {/* Recommendations */}
               {data.recommendations?.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white/50 uppercase tracking-wider">
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     Khuyến nghị đã duyệt
                   </div>
                   {data.recommendations.map((rec: any, i: number) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0 mt-0.5">
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-500 shrink-0 mt-0.5">
                         {REC_ICON[rec.type] ?? <ThumbsUp className="w-3.5 h-3.5" />}
                       </div>
-                      <p className="text-xs text-white/70 leading-relaxed">{rec.description}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{rec.description}</p>
                     </div>
                   ))}
                 </div>

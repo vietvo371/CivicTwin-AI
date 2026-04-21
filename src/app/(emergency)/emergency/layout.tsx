@@ -29,7 +29,7 @@ function EmergencyGuard({ children }: { children: React.ReactNode }) {
       if (!user) {
         router.push('/');
       } else {
-        const hasAccess = user.roles?.includes('emergency') || user.roles?.includes('super_admin') || user.roles?.includes('city_admin');
+        const hasAccess = user.roles?.includes('emergency') || user.roles?.includes('super_admin') || user.roles?.includes('city_admin') || user.roles?.includes('urban_planner');
         if (!hasAccess) {
           router.push('/unauthorized');
         }

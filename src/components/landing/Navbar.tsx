@@ -25,7 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Map, FileText, Bell, UserCircle, LayoutDashboard, LogOut, ChevronDown, AlertTriangle, Info, ChevronRight, CheckCheck, Trash2, Brain, Menu } from "lucide-react";
+import { Map, FileText, Bell, UserCircle, LayoutDashboard, LogOut, ChevronDown, AlertTriangle, Info, ChevronRight, CheckCheck, Trash2, Brain, Menu, ShieldAlert, Settings2 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
@@ -61,6 +61,9 @@ export default function Navbar({ showScrollProgress = false }: { showScrollProgr
   const handleLogout = async () => { await logout(); router.push("/"); };
   const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const isOperatorOrAdmin = user?.roles?.some((r: string) => ["traffic_operator", "city_admin", "super_admin", "emergency", "urban_planner"].includes(r));
+  const isAdmin = user?.roles?.some((r: string) => ["super_admin", "city_admin"].includes(r));
+  const isEmergency = user?.roles?.some((r: string) => r === "emergency");
+  const isOperator = user?.roles?.some((r: string) => ["traffic_operator", "urban_planner"].includes(r));
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
@@ -234,9 +237,26 @@ export default function Navbar({ showScrollProgress = false }: { showScrollProgr
                     <>
                       <DropdownMenuSeparator className="!bg-secondary" />
                       <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => router.push("/dashboard")} className="px-3 py-2.5 rounded-lg cursor-pointer gap-3 focus:!bg-secondary/80 hover:!bg-secondary/80 !text-foreground transition-colors">
-                          <LayoutDashboard className="w-4 h-4 !text-cyan-400" />{t('navbar.operatorDashboard')}
-                        </DropdownMenuItem>
+                        {isOperator && (
+                          <DropdownMenuItem onClick={() => router.push("/dashboard")} className="px-3 py-2.5 rounded-lg cursor-pointer gap-3 focus:!bg-secondary/80 hover:!bg-secondary/80 !text-foreground transition-colors">
+                            <LayoutDashboard className="w-4 h-4 !text-cyan-400" />{t('navbar.operatorDashboard')}
+                          </DropdownMenuItem>
+                        )}
+                        {isAdmin && (
+                          <>
+                            <DropdownMenuItem onClick={() => router.push("/dashboard")} className="px-3 py-2.5 rounded-lg cursor-pointer gap-3 focus:!bg-secondary/80 hover:!bg-secondary/80 !text-foreground transition-colors">
+                              <LayoutDashboard className="w-4 h-4 !text-cyan-400" />{t('navbar.operatorDashboard')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push("/admin")} className="px-3 py-2.5 rounded-lg cursor-pointer gap-3 focus:!bg-secondary/80 hover:!bg-secondary/80 !text-foreground transition-colors">
+                              <Settings2 className="w-4 h-4 !text-violet-400" />{t('navbar.adminPanel')}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {isEmergency && (
+                          <DropdownMenuItem onClick={() => router.push("/emergency/incidents")} className="px-3 py-2.5 rounded-lg cursor-pointer gap-3 focus:!bg-rose-500/10 hover:!bg-rose-500/10 !text-rose-400 transition-colors">
+                            <ShieldAlert className="w-4 h-4" />{t('navbar.emergencyConsole')}
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuGroup>
                     </>
                   )}

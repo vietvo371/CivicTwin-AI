@@ -45,6 +45,8 @@
     "myReports": "Báo cáo của tôi",
     "profile": "Hồ sơ",
     "operatorDashboard": "Bảng điều hành",
+    "adminPanel": "Quản trị hệ thống",
+    "emergencyConsole": "Trung tâm khẩn cấp",
     "signOut": "Đăng xuất"
   },
   "landing": {
@@ -479,6 +481,9 @@
     "notAssigned": "Chưa phân công",
     "operationalRecommendations": "Khuyến nghị Điều hành",
     "noRecommendations": "Chưa có khuyến nghị điều hướng hoặc thay đổi tín hiệu nào từ hệ thống chuyên môn.",
+    "noImages": "Chưa có hình ảnh đính kèm",
+    "affectedArea": "Khu vực bị ảnh hưởng",
+    "segments": "đoạn đường",
     "detailsLabel": "Chi tiết",
     "detailsPlaceholder": "Vị trí, hướng đi, tình huống cụ thể...",
     "submitReport": "Gửi báo cáo",

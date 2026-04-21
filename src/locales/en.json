@@ -45,6 +45,8 @@
     "myReports": "My Reports",
     "profile": "Profile",
     "operatorDashboard": "Operator Dashboard",
+    "adminPanel": "Admin Panel",
+    "emergencyConsole": "Emergency Console",
     "signOut": "Sign Out"
   },
   "landing": {
@@ -479,6 +481,9 @@
     "notAssigned": "Not assigned",
     "operationalRecommendations": "Operational Recommendations",
     "noRecommendations": "No routing or signal change recommendations from the expert system yet.",
+    "noImages": "No images attached",
+    "affectedArea": "Affected Area",
+    "segments": "segments",
     "detailsLabel": "Details",
     "detailsPlaceholder": "Location, direction, exact scenario...",
     "submitReport": "Submit Report",

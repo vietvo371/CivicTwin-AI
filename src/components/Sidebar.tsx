@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Map, AlertTriangle, Brain, Lightbulb, BarChart3,
-  LogOut, Menu, X, Activity, FlaskConical, Camera,
+  LogOut, Menu, X, Activity, FlaskConical, Camera, Settings2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -23,6 +23,8 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  const isAdmin = user?.roles?.some((r: string) => ['super_admin', 'city_admin'].includes(r));
+
   const navItems = [
     { href: '/dashboard', icon: Map, labelKey: 'sidebar.trafficMap' },
     { href: '/dashboard/incidents', icon: AlertTriangle, labelKey: 'sidebar.incidents' },
@@ -31,6 +33,7 @@ export default function Sidebar() {
     { href: '/dashboard/recommendations', icon: Lightbulb, labelKey: 'sidebar.recommendations' },
     { href: '/dashboard/cctv', icon: Camera, labelKey: 'sidebar.cctvMonitor' },
     { href: '/dashboard/analytics', icon: BarChart3, labelKey: 'sidebar.analytics' },
+    ...(isAdmin ? [{ href: '/admin', icon: Settings2, labelKey: 'navbar.adminPanel' }] : []),
   ];
 
   // Auto-collapse on mobile/tablet
