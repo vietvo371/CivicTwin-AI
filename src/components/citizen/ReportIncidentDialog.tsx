@@ -253,7 +253,7 @@ export default function ReportIncidentDialog() {
 
     try {
       const formData = new FormData();
-      formData.append('title', `${t(`enums.incidentType.${incidentType}`)} - ${location}`);
+      formData.append('title', `${t(`report.incidentType.${incidentType}`)} - ${location}`);
       formData.append('type', incidentType);
       formData.append('severity', severity);
       if (description) formData.append('description', description);
@@ -374,11 +374,11 @@ export default function ReportIncidentDialog() {
                   <SelectValue placeholder={t('report.selectType')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
-                  <SelectItem value="accident">{t('report.accidentCrash')}</SelectItem>
-                  <SelectItem value="congestion">{t('report.congestion')}</SelectItem>
-                  <SelectItem value="construction">{t('report.roadWorkBlocked')}</SelectItem>
-                  <SelectItem value="weather">{t('report.floodWeather')}</SelectItem>
-                  <SelectItem value="other">{t('report.other')}</SelectItem>
+                  <SelectItem value="accident">{t('report.incidentType.accident')}</SelectItem>
+                  <SelectItem value="congestion">{t('report.incidentType.congestion')}</SelectItem>
+                  <SelectItem value="construction">{t('report.incidentType.construction')}</SelectItem>
+                  <SelectItem value="weather">{t('report.incidentType.weather')}</SelectItem>
+                  <SelectItem value="other">{t('report.incidentType.other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

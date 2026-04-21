@@ -631,6 +631,8 @@
     "info": "Thông tin",
     "warning": "Cảnh báo",
     "critical": "Nghiêm trọng",
+    "trafficAdvisory": "Khuyến nghị giao thông",
+    "trafficAdvisoryDesc": "Một phương án điều tiết giao thông vừa được phê duyệt. Vui lòng kiểm tra tuyến đường của bạn.",
     "myReports": "Báo cáo của tôi",
     "myReportsSubtitle": "Theo dõi trạng thái các báo cáo sự cố đã gửi",
     "total": "Tổng cộng",
@@ -798,7 +800,14 @@
     "validLocationEx": "VD: Ngã tư Nguyễn Văn Linh, cầu Rồng...",
     "validDescMin": "Mô tả quá ngắn (tối thiểu 10 ký tự).",
     "validDescEx": "Mô tả rõ ràng giúp đội cứu hộ phản ứng nhanh hơn.",
-    "imageTooLarge": "Ảnh quá lớn (tối đa 5MB)."
+    "imageTooLarge": "Ảnh quá lớn (tối đa 5MB).",
+    "incidentType": {
+      "accident": "Tai nạn",
+      "congestion": "Ùn tắc",
+      "construction": "Thi công",
+      "weather": "Thời tiết",
+      "other": "Khác"
+    }
   },
   "enums": {
     "roles": {
@@ -922,7 +931,11 @@
     "incidentMessage": "Phát hiện sự cố {type} - Mức độ {severity}",
     "newPrediction": "Dự đoán AI mới",
     "predictionMessage": "Dự đoán cho {edgeCount} đoạn đường",
-    "predictionCompleted": "Phân tích AI hoàn tất"
+    "predictionCompleted": "Phân tích AI hoàn tất",
+    "recommendationApproved": "Khuyến nghị đã được duyệt",
+    "recommendationApprovedMessage": "Một khuyến nghị điều tiết giao thông đã được phê duyệt và đang có hiệu lực",
+    "priorityRouteUpdated": "Tuyến ưu tiên đã cập nhật",
+    "newRouteAvailable": "Có tuyến ưu tiên mới cho xe khẩn cấp"
   },
   "errors": {
     "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối.",

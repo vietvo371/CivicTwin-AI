@@ -130,6 +130,7 @@ export default function DashboardPage() {
   const [aiFeed, setAiFeed] = useState<AIJob[]>([]);
   const [pendingRecs, setPendingRecs] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<number[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -169,6 +170,21 @@ export default function DashboardPage() {
     },
     PredictionReceived: (data: any) => {
       setAiFeed(prev => [data, ...prev.slice(0, 4)]);
+      const ids: number[] = data.edges?.map((e: any) => e.edge_id ?? e.id).filter(Boolean) ?? [];
+      if (ids.length > 0) {
+        setHighlightedEdgeIds(ids);
+        setTimeout(() => setHighlightedEdgeIds([]), 30000);
+      }
+    },
+    IncidentResolved: (data: any) => {
+      // Mark incident resolved in list + clear highlight if it belongs to this incident
+      setIncidents(prev => prev.map(i =>
+        i.id === data.incident_id ? { ...i, status: data.status } : i
+      ));
+      setHighlightedEdgeIds(prev => {
+        const restored = new Set<number>(data.restored_edge_ids ?? []);
+        return prev.filter(id => !restored.has(id));
+      });
     },
   });
 
@@ -253,6 +269,12 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Activity className="w-4 h-4 text-blue-500" />
                 {t('op.liveTrafficGrid')}
+                {highlightedEdgeIds.length > 0 && (
+                  <span className="flex items-center gap-1 text-orange-400 font-bold text-[11px] bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full animate-pulse">
+                    <AlertTriangle className="w-3 h-3" />
+                    {highlightedEdgeIds.length} đoạn bị ảnh hưởng
+                  </span>
+                )}
               </CardTitle>
               <Link href="/dashboard" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
                 {t('op.fullScreen')} <ArrowUpRight className="w-3.5 h-3.5" />
@@ -260,7 +282,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-3 pt-2">
               <div className="h-[500px] rounded-xl overflow-hidden border border-border/50 relative">
-                <TrafficMap hideOverlays />
+                <TrafficMap hideOverlays highlightedEdgeIds={highlightedEdgeIds} />
               </div>
             </CardContent>
           </Card>

@@ -35,7 +35,7 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground flex relative">
       <Sidebar />
-      <main className="flex-1 transition-all duration-300 pl-[72px] lg:pl-[260px] min-w-0">
+      <main className="flex-1 transition-all duration-300 pl-[72px] lg:pl-[260px] min-w-0 overflow-x-auto">
         <div className="p-4 md:p-6 lg:p-8">
           {children}
         </div>

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
-import { useEcho } from "@/hooks/useEcho";
+import { useEcho, useEchoMulti } from "@/hooks/useEcho";
 import api from "@/lib/api";
-import { Bell, AlertTriangle, Info, ShieldAlert, MapPin, Clock, Filter, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, AlertTriangle, Info, ShieldAlert, MapPin, Clock, Filter, Loader2, Navigation } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,6 +27,7 @@ function mapSeverity(s: string): "info" | "warning" | "critical" {
 
 export default function AlertsPage() {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [filter, setFilter] = useState<"all" | "info" | "warning" | "critical">("all");
   const [liveAlerts, setLiveAlerts] = useState<Alert[]>([]);
   const [apiAlerts, setApiAlerts] = useState<Alert[]>([]);
@@ -51,18 +53,31 @@ export default function AlertsPage() {
     fetchAlerts();
   }, []);
 
-  // Real-time: new incidents appear as alerts
-  useEcho<any>('traffic', 'IncidentCreated', (data) => {
-    const newAlert: Alert = {
-      id: data.id || Date.now(),
-      title: data.title || 'New Incident',
-      description: data.description || '',
-      severity: mapSeverity(data.severity || 'medium'),
-      area: data.location_name || '',
-      created_at: data.created_at || new Date().toISOString(),
-      active: true,
-    };
-    setLiveAlerts(prev => [newAlert, ...prev]);
+  // Real-time: new incidents + approved recommendations appear as alerts
+  useEchoMulti('traffic', {
+    IncidentCreated: (data: any) => {
+      setLiveAlerts(prev => [{
+        id: data.id || Date.now(),
+        title: data.title || 'New Incident',
+        description: data.description || '',
+        severity: mapSeverity(data.severity || 'medium'),
+        area: data.location_name || '',
+        created_at: data.created_at || new Date().toISOString(),
+        active: true,
+      }, ...prev]);
+    },
+    RecommendationGenerated: (data: any) => {
+      if (data.action !== 'approved') return;
+      setLiveAlerts(prev => [{
+        id: Date.now(),
+        title: t('citizen.trafficAdvisory') || 'Traffic Advisory',
+        description: data.description || t('citizen.trafficAdvisoryDesc') || 'A traffic management recommendation has been approved. Please check your route.',
+        severity: 'warning',
+        area: '',
+        created_at: new Date().toISOString(),
+        active: true,
+      }, ...prev]);
+    },
   });
 
   const allAlerts = [...liveAlerts, ...apiAlerts];
@@ -145,14 +160,18 @@ export default function AlertsPage() {
             return (
               <Card
                 key={alert.id}
+                onClick={() => alert.active && router.push(`/map?incident=${alert.id}`)}
                 className={`bg-card/80 backdrop-blur transition-all hover:shadow-lg ${
-                  alert.active ? "hover:border-primary/20" : "opacity-60"
+                  alert.active ? "hover:border-primary/20 cursor-pointer" : "opacity-60"
                 }`}
               >
                 <CardContent className="p-5 relative">
-                  {/* Active pulse indicator */}
+                  {/* View on map hint + pulse indicator */}
                   {alert.active && (
-                    <div className="absolute top-5 right-5">
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1 opacity-60">
+                        <Navigation className="w-3 h-3" /> Xem bản đồ
+                      </span>
                       <span className="relative flex h-2.5 w-2.5">
                         <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                           alert.severity === "critical" ? "bg-rose-400" : "bg-amber-400"

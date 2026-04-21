@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import api from '@/lib/api';
@@ -10,6 +10,17 @@ import { useEcho } from '@/hooks/useEcho';
 import { AlertTriangle, AlertCircle, RefreshCw, Activity, Menu, X, Search, Navigation, Construction, CarFront, Gauge, MapPin } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import './TrafficMap.css';
+import IncidentDetailModal from '@/components/citizen/IncidentDetailModal';
+
+const SEVERITY_COLOR: Record<string, string> = {
+  low: '#10b981',
+  medium: '#eab308',
+  high: '#f97316',
+  critical: '#ef4444',
+};
+
+const INCIDENT_BOOST_DENSITY = 0.85;
+const INCIDENT_BOOST_DURATION_MS = 15 * 60 * 1000;
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -17,9 +28,11 @@ interface TrafficMapProps {
   isPublic?: boolean;
   hideOverlays?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
+  highlightedEdgeIds?: number[];
+  focusIncidentId?: number;
 }
 
-export default function TrafficMap({ isPublic = false, hideOverlays = false, onMapClick }: TrafficMapProps) {
+export default function TrafficMap({ isPublic = false, hideOverlays = false, onMapClick, highlightedEdgeIds = [], focusIncidentId }: TrafficMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const { theme, resolvedTheme } = useTheme();
@@ -34,9 +47,79 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mapIncidents, setMapIncidents] = useState<any[]>([]);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
-  // Refs for tracking GeoJSON data
+  // Refs for tracking GeoJSON data and map markers
   const geojsonDataRef = useRef<any>(null);
+  const markersRef = useRef<Map<number, mapboxgl.Marker>>(new Map());
+  const originalDensityRef = useRef<Map<number, number>>(new Map());
+
+  const boostAffectedEdgesRef = useRef<(ids: number[]) => void>(null as any);
+  const boostAffectedEdges = useCallback((affectedEdgeIds: number[]) => {
+    if (affectedEdgeIds.length === 0) return;
+    // If map data not ready yet, retry after 2s
+    if (!map.current || !geojsonDataRef.current) {
+      setTimeout(() => boostAffectedEdgesRef.current?.(affectedEdgeIds), 2000);
+      return;
+    }
+    const idSet = new Set(affectedEdgeIds);
+    geojsonDataRef.current.features.forEach((f: any) => {
+      if (!idSet.has(f.properties.id)) return;
+      if (!originalDensityRef.current.has(f.properties.id)) {
+        originalDensityRef.current.set(f.properties.id, f.properties.current_density);
+      }
+      f.properties.current_density = Math.max(f.properties.current_density, INCIDENT_BOOST_DENSITY);
+    });
+    const source = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
+    if (source) source.setData(geojsonDataRef.current);
+
+    setTimeout(() => {
+      if (!map.current || !geojsonDataRef.current) return;
+      geojsonDataRef.current.features.forEach((f: any) => {
+        if (!idSet.has(f.properties.id)) return;
+        const orig = originalDensityRef.current.get(f.properties.id);
+        if (orig !== undefined) {
+          f.properties.current_density = orig;
+          originalDensityRef.current.delete(f.properties.id);
+        }
+      });
+      const src = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
+      if (src) src.setData(geojsonDataRef.current);
+    }, INCIDENT_BOOST_DURATION_MS);
+  }, []);
+  boostAffectedEdgesRef.current = boostAffectedEdges;
+
+  const addIncidentMarker = useCallback((inc: any) => {
+    if (!map.current) return;
+    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat;
+    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng;
+    if (!lat || !lng) return;
+    if (markersRef.current.has(inc.id)) return;
+
+    const color = SEVERITY_COLOR[inc.severity] ?? '#94a3b8';
+    const el = document.createElement('div');
+    const normalShadow = `0 0 0 2px ${color}66,0 2px 8px rgba(0,0,0,0.4)`;
+    const hoverShadow = `0 0 0 5px ${color}44,0 0 16px ${color}88,0 2px 8px rgba(0,0,0,0.5)`;
+    el.style.cssText = `
+      width:28px;height:28px;border-radius:50%;
+      background:${color};border:3px solid white;
+      box-shadow:${normalShadow};
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      transition:box-shadow 0.2s ease;
+    `;
+    el.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="white" style="pointer-events:none;flex-shrink:0;display:block"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>`;
+    el.addEventListener('mouseenter', () => { el.style.boxShadow = hoverShadow; });
+    el.addEventListener('mouseleave', () => { el.style.boxShadow = normalShadow; });
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setSelectedIncidentId(inc.id);
+    });
+
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .addTo(map.current);
+    markersRef.current.set(inc.id, marker);
+  }, []);
 
   useEffect(() => {
     const fetchIncidents = async () => {
@@ -58,11 +141,77 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
     fetchIncidents();
   }, [isPublic]);
 
-  // Real-time: new incidents appear on map immediately
+  // Real-time: new incidents — add marker immediately, boost edges when AI responds
   useEcho<any>('traffic', 'IncidentCreated', (data) => {
-    if (data.latitude && data.longitude) {
+    const lat = data.latitude ?? data.lat ?? data.location?.lat;
+    const lng = data.longitude ?? data.lng ?? data.location?.lng;
+    if (lat && lng) {
       setMapIncidents(prev => [data, ...prev]);
+      addIncidentMarker(data);
     }
+  });
+
+  // Real-time: AI prediction done → boost affected edges on map
+  useEcho<any>('traffic', 'PredictionReceived', (data) => {
+    const ids: number[] = (data.edges ?? []).map((e: any) => e.edge_id).filter(Boolean);
+    if (ids.length > 0) boostAffectedEdges(ids);
+  });
+
+  // Real-time: incident resolved → remove marker + restore edge colors from backend
+  useEcho<any>('traffic', 'IncidentResolved', (data) => {
+    const incidentId: number = data.incident_id;
+    const restoredIds: number[] = data.restored_edge_ids ?? [];
+
+    // Remove marker
+    const marker = markersRef.current.get(incidentId);
+    if (marker) {
+      marker.remove();
+      markersRef.current.delete(incidentId);
+    }
+    setMapIncidents(prev => prev.filter(inc => inc.id !== incidentId));
+
+    // Reload fresh GeoJSON from backend so edge colors reflect real restored values
+    if (restoredIds.length > 0) {
+      const endpoint = isPublic ? '/public/edges/geojson' : '/edges/geojson';
+      api.get(endpoint).then(res => {
+        geojsonDataRef.current = res.data;
+        originalDensityRef.current.clear();
+        const source = map.current?.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
+        if (source) source.setData(res.data);
+        // Recalculate KPIs
+        let congested = 0, totalDen = 0;
+        res.data.features.forEach((f: any) => {
+          const den = f.properties.current_density || 0;
+          totalDen += den;
+          if (den > 0.6) congested++;
+        });
+        setCongestedCount(congested);
+        setAvgDensity(res.data.features.length > 0 ? totalDen / res.data.features.length : 0);
+      }).catch(() => {});
+    }
+  });
+
+  // Real-time: scheduled density decay — batch update all edges
+  useEcho<any>('traffic', 'TrafficDensityDecayed', (data) => {
+    if (!map.current || !geojsonDataRef.current) return;
+    const updates = new Map((data.edges ?? []).map((e: any) => [e.id, e]));
+    let congested = 0, totalDen = 0;
+    geojsonDataRef.current.features.forEach((f: any) => {
+      const upd = updates.get(f.properties.id) as any;
+      if (upd) {
+        f.properties.current_density = upd.current_density;
+        f.properties.current_speed_kmh = upd.current_speed_kmh;
+        f.properties.congestion_level = upd.congestion_level;
+      }
+      const den = f.properties.current_density || 0;
+      totalDen += den;
+      if (den > 0.6) congested++;
+    });
+    const source = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
+    if (source) source.setData(geojsonDataRef.current);
+    setCongestedCount(congested);
+    const count = geojsonDataRef.current.features.length;
+    setAvgDensity(count > 0 ? totalDen / count : 0);
   });
 
   // Real-time: individual edge metric changes (congestion_level, status)
@@ -154,6 +303,60 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
     const count = geojsonDataRef.current.features.length;
     setAvgDensity(count > 0 ? totalDen / count : 0);
   });
+
+  // Add markers when incidents load or map becomes ready
+  useEffect(() => {
+    if (!map.current || loading) return;
+    mapIncidents.forEach(addIncidentMarker);
+  }, [mapIncidents, loading, addIncidentMarker]);
+
+  // Focus on specific incident when navigated from notification
+  useEffect(() => {
+    if (!focusIncidentId || !map.current || loading) return;
+    const inc = mapIncidents.find(i => i.id === focusIncidentId);
+    if (!inc) return;
+    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat;
+    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng;
+    if (!lat || !lng) return;
+    map.current.flyTo({ center: [lng, lat], zoom: 17, duration: 1400, pitch: 55 });
+  }, [focusIncidentId, mapIncidents, loading]);
+
+  // Update highlight layer when affected edges change (e.g. after AI prediction)
+  useEffect(() => {
+    if (!map.current || !geojsonDataRef.current || !map.current.isStyleLoaded()) return;
+    const source = map.current.getSource('highlight-edges') as mapboxgl.GeoJSONSource;
+    if (!source) return;
+
+    if (highlightedEdgeIds.length === 0) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+
+    const idSet = new Set(highlightedEdgeIds);
+    const highlighted = {
+      type: 'FeatureCollection' as const,
+      features: (geojsonDataRef.current.features as any[]).filter(
+        (f: any) => idSet.has(f.properties.id)
+      ),
+    };
+    source.setData(highlighted);
+
+    // Fly to centroid of highlighted edges
+    if (highlighted.features.length > 0) {
+      const coords: [number, number][] = [];
+      highlighted.features.forEach((f: any) => {
+        const geom = f.geometry;
+        if (geom.type === 'LineString') {
+          geom.coordinates.forEach((c: [number, number]) => coords.push(c));
+        }
+      });
+      if (coords.length > 0) {
+        const lng = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+        const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+        map.current.flyTo({ center: [lng, lat], zoom: 15, duration: 1200 });
+      }
+    }
+  }, [highlightedEdgeIds]);
 
   const handleMyLocation = () => {
     if ('geolocation' in navigator) {
@@ -312,6 +515,41 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
               }
             });
           }
+          // Highlight layer for AI-predicted affected edges
+          if (!map.current.getSource('highlight-edges')) {
+            map.current.addSource('highlight-edges', {
+              type: 'geojson',
+              data: { type: 'FeatureCollection', features: [] }
+            });
+          }
+          if (!map.current.getLayer('highlight-lines-glow')) {
+            map.current.addLayer({
+              id: 'highlight-lines-glow',
+              type: 'line',
+              source: 'highlight-edges',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#f97316',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 10, 15, 18],
+                'line-opacity': 0.25,
+                'line-blur': 6,
+              }
+            });
+          }
+          if (!map.current.getLayer('highlight-lines')) {
+            map.current.addLayer({
+              id: 'highlight-lines',
+              type: 'line',
+              source: 'highlight-edges',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#fb923c',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 15, 8],
+                'line-opacity': 0.95,
+                'line-dasharray': [2, 1],
+              }
+            });
+          }
         };
 
         const handleStyleLoad = () => {
@@ -384,6 +622,8 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   useEffect(() => {
     initializeMap();
     return () => {
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current.clear();
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -583,6 +823,13 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
           <RefreshCw className={`w-5 h-5 transition-colors ${loading ? 'animate-spin text-primary' : ''}`} />
         </button>
       </div>
+
+      {selectedIncidentId && (
+        <IncidentDetailModal
+          incidentId={selectedIncidentId}
+          onClose={() => setSelectedIncidentId(null)}
+        />
+      )}
     </div>
   );
 }

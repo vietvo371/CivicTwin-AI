@@ -180,6 +180,69 @@ export function NotificationListener() {
         );
       });
 
+      channel.listen('.RecommendationGenerated', (data: any) => {
+        if (isDev) {
+          console.log('[NotificationListener] ✅ RecommendationGenerated:', data);
+        }
+
+        const currentT = tRef.current;
+        const currentUser = userRef.current;
+        const roles = currentUser?.roles || [];
+
+        if (data.action === 'approved') {
+          // Operators/admins see approval confirmation
+          if (hasRole(roles, 'traffic_operator', 'city_admin', 'super_admin', 'urban_planner')) {
+            const title = currentT('notifications.recommendationApproved') || 'Recommendation Approved';
+            const message = data.description || currentT('notifications.recommendationApprovedMessage') || 'A traffic recommendation has been approved';
+            const link = `/dashboard/recommendations`;
+
+            addNotification({ title, message, type: 'system', link });
+
+            toast.success(
+              <div className="cursor-pointer w-full flex flex-col gap-1" onClick={() => router.push(link)}>
+                <span className="font-medium">{title}</span>
+                <span className="text-sm opacity-90">{message}</span>
+              </div>,
+              { duration: 6000 }
+            );
+          }
+
+          // Citizens see advisory toast
+          if (hasRole(roles, 'citizen')) {
+            const title = currentT('citizen.trafficAdvisory') || 'Traffic Advisory';
+            const message = data.description || currentT('citizen.trafficAdvisoryDesc') || 'A traffic recommendation has been approved. Check your route.';
+            const link = `/alerts`;
+
+            addNotification({ title, message, type: 'system', link });
+
+            toast.warning(
+              <div className="cursor-pointer w-full flex flex-col gap-1" onClick={() => router.push(link)}>
+                <span className="font-medium">{title}</span>
+                <span className="text-sm opacity-90">{message}</span>
+              </div>,
+              { duration: 7000 }
+            );
+          }
+
+          // Emergency users see critical route alert
+          if (hasRole(roles, 'emergency')) {
+            const title = currentT('notifications.priorityRouteUpdated') || 'Priority Route Updated';
+            const message = data.description || currentT('notifications.newRouteAvailable') || 'A new priority route is available';
+            const link = `/emergency/priority-route`;
+
+            addNotification({ title, message, type: 'incident', severity: 'high', link });
+
+            toast.warning(
+              <div className="cursor-pointer w-full flex flex-col gap-1" onClick={() => router.push(link)}>
+                <span className="font-medium">{title}</span>
+                <span className="text-sm opacity-90">{message}</span>
+              </div>,
+              { duration: 8000 }
+            );
+          }
+        }
+      });
+
     } catch (err) {
       console.error('[NotificationListener] ❌ Failed to connect:', err);
       subscribedRef.current = false;
@@ -190,6 +253,7 @@ export function NotificationListener() {
         try {
           channel.stopListening('.IncidentCreated');
           channel.stopListening('.PredictionReceived');
+          channel.stopListening('.RecommendationGenerated');
           channel.leave();
         } catch (err) {
           console.warn('[NotificationListener] ⚠️ Cleanup error:', err);

@@ -631,6 +631,8 @@
     "info": "Info",
     "warning": "Warning",
     "critical": "Critical",
+    "trafficAdvisory": "Traffic Advisory",
+    "trafficAdvisoryDesc": "A traffic management action has been approved. Please check your route.",
     "myReports": "My Reports",
     "myReportsSubtitle": "Track the status of your submitted incident reports",
     "total": "Total",
@@ -798,7 +800,14 @@
     "validLocationEx": "E.g., Nguyen Van Linh intersection, Dragon Bridge...",
     "validDescMin": "Description is too short (minimum 10 characters).",
     "validDescEx": "Clear descriptions help the rescue team respond faster.",
-    "imageTooLarge": "Image is too large (max 5MB)."
+    "imageTooLarge": "Image is too large (max 5MB).",
+    "incidentType": {
+      "accident": "Accident",
+      "congestion": "Congestion",
+      "construction": "Construction",
+      "weather": "Weather",
+      "other": "Other"
+    }
   },
   "enums": {
     "roles": {
@@ -922,7 +931,11 @@
     "incidentMessage": "Detected {type} incident - Severity: {severity}",
     "newPrediction": "New AI Prediction",
     "predictionMessage": "Prediction for {edgeCount} road segments",
-    "predictionCompleted": "AI analysis completed"
+    "predictionCompleted": "AI analysis completed",
+    "recommendationApproved": "Recommendation Approved",
+    "recommendationApprovedMessage": "A traffic recommendation has been approved and is now active",
+    "priorityRouteUpdated": "Priority Route Updated",
+    "newRouteAvailable": "A new priority route is available for emergency response"
   },
   "errors": {
     "networkError": "Network error. Please check your connection.",
