@@ -376,7 +376,7 @@ export default function IncidentDetailPage() {
                         </div>
                         {typeof pred.confidence_score === 'number' && pred.confidence_score > 0 && (
                           <span className="text-xs font-semibold text-muted-foreground">
-                            {t('op.confidence')}: <span className="text-primary">{(pred.confidence_score * 100).toFixed(0)}%</span>
+                            {t('op.confidence')}: <span className="text-primary">{((typeof pred.confidence_score === 'number' ? pred.confidence_score : 0) * 100).toFixed(0)}%</span>
                           </span>
                         )}
                       </div>
@@ -392,8 +392,10 @@ export default function IncidentDetailPage() {
                           {pred.prediction_edges.map((edge) => {
                             const congLevel = edge.congestion_level || 'moderate';
                             const cong = congestionColors[congLevel] || congestionColors.moderate;
-                            const density = parseFloat(edge.predicted_density);
-                            const speed = parseFloat(edge.predicted_speed);
+                            const density = Number(edge.predicted_density);
+                            const speed = Number(edge.predicted_speed);
+                            const validDensity = isFinite(density);
+                            const validSpeed = isFinite(speed);
                             return (
                               <div key={edge.id} className="px-4 py-3 flex items-center gap-3">
                                 <div className={`w-1 h-10 rounded-full ${cong.bar} shrink-0`} />
@@ -408,11 +410,11 @@ export default function IncidentDetailPage() {
                                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                     <span className="flex items-center gap-1">
                                       <Activity className="w-3 h-3" />
-                                      {t('op.density')}: <strong className="text-foreground">{!isNaN(density) ? density.toFixed(1) : '—'}</strong>
+                                      {t('op.density')}: <strong className="text-foreground">{validDensity ? density.toFixed(1) : '—'}</strong>
                                     </span>
                                     <span className="flex items-center gap-1">
                                       <Navigation className="w-3 h-3" />
-                                      {t('op.speed')}: <strong className="text-foreground">{!isNaN(speed) ? `${speed.toFixed(0)} km/h` : '—'}</strong>
+                                      {t('op.speed')}: <strong className="text-foreground">{validSpeed ? `${speed.toFixed(0)} km/h` : '—'}</strong>
                                     </span>
                                   </div>
                                 </div>
