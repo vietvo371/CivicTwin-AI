@@ -155,8 +155,8 @@ export default function AnalyticsPage() {
         <KPICard icon={ShieldCheck} color="emerald" label={t('op.resolutionRate')} value={`${kpis.resolution_rate}%`} sub={`${kpis.resolved_incidents}/${kpis.total_incidents}`} />
         <KPICard icon={Cpu} color="blue" label={t('op.aiSessions')} value={kpis.total_predictions} sub={`${kpis.completed_predictions} ${t('op.completedRuns')}`} />
         <KPICard icon={Clock} color="amber" label={t('op.avgProcessingTime')} value={`${kpis.avg_processing_time_ms}ms`} sub={t('op.aiPredictionSpeed')} />
-        <KPICard icon={Gauge} color="orange" label={t('op.avgDensity')} value={`${(kpis.avg_density * 100).toFixed(0)}%`} sub={`${kpis.congested_edges}/${kpis.total_edges} ${t('op.congested')}`} />
-        <KPICard icon={TrendingUp} color="violet" label={t('op.aiConfidence')} value={`${(kpis.avg_confidence * 100).toFixed(0)}%`} sub={t('op.avgConfidence')} />
+        <KPICard icon={Gauge} color="orange" label={t('op.avgDensity')} value={`${((kpis.avg_density ?? 0) * 100).toFixed(0)}%`} sub={`${kpis.congested_edges}/${kpis.total_edges} ${t('op.congested')}`} />
+        <KPICard icon={TrendingUp} color="violet" label={t('op.aiConfidence')} value={`${((kpis.avg_confidence ?? 0) * 100).toFixed(0)}%`} sub={t('op.avgConfidence')} />
       </div>
 
       {/* ─── Row 1: Timeline + Severity Pie ─── */}

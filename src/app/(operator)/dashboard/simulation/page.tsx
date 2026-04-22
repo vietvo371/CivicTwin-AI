@@ -103,7 +103,7 @@ export default function SimulationPage() {
   const segments = result?.segments || [];
   const visibleSegments = showAllSegments ? segments : segments.slice(0, 5);
   const densityChange = result
-    ? ((result.after_avg_density - result.before_avg_density) * 100).toFixed(0)
+    ? (((result.after_avg_density ?? 0) - (result.before_avg_density ?? 0)) * 100).toFixed(0)
     : '0';
 
   return (
@@ -250,14 +250,14 @@ export default function SimulationPage() {
                   <div className="text-center flex-1">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase">{t('op.before')}</p>
                     <p className={`text-lg font-bold ${getDensityColor(result.before_avg_density)}`}>
-                      {(result.before_avg_density * 100).toFixed(0)}%
+                      {((result.before_avg_density ?? 0) * 100).toFixed(0)}%
                     </p>
                   </div>
                   <TrendingUp className="w-5 h-5 text-rose-500 mx-2 shrink-0" />
                   <div className="text-center flex-1">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase">{t('op.after')}</p>
                     <p className={`text-lg font-bold ${getDensityColor(result.after_avg_density)}`}>
-                      {(result.after_avg_density * 100).toFixed(0)}%
+                      {((result.after_avg_density ?? 0) * 100).toFixed(0)}%
                     </p>
                   </div>
                 </div>
@@ -307,18 +307,18 @@ export default function SimulationPage() {
                       <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">{t('op.before')}</p>
                         <p className={`text-base font-bold ${getDensityColor(seg.before)}`}>
-                          {(seg.before * 100).toFixed(0)}%
+                          {((seg.before ?? 0) * 100).toFixed(0)}%
                         </p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">{t('op.after')}</p>
                         <p className={`text-base font-bold ${getDensityColor(seg.after)}`}>
-                          {(seg.after * 100).toFixed(0)}%
+                          {((seg.after ?? 0) * 100).toFixed(0)}%
                         </p>
                       </div>
                     </div>
                     <div className="h-2 rounded-full bg-secondary border overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-1000 ${getBarColor(seg.after)}`} style={{ width: `${seg.after * 100}%` }} />
+                      <div className={`h-full rounded-full transition-all duration-1000 ${getBarColor(seg.after)}`} style={{ width: `${(seg.after ?? 0) * 100}%` }} />
                     </div>
                   </div>
                 ))}
