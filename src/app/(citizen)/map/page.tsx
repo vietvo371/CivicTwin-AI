@@ -1,10 +1,11 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import TrafficMap from '@/components/TrafficMap';
 import ReportIncidentDialog from '@/components/citizen/ReportIncidentDialog';
 
-export default function CitizenMapPage() {
+function MapContent() {
   const searchParams = useSearchParams();
   const focusIncidentId = searchParams.get('incident')
     ? Number(searchParams.get('incident'))
@@ -18,5 +19,21 @@ export default function CitizenMapPage() {
         <ReportIncidentDialog />
       </div>
     </div>
+  );
+}
+
+function MapFallback() {
+  return (
+    <div className="flex items-center justify-center w-full h-full bg-gray-100">
+      <div className="text-gray-500">Loading map...</div>
+    </div>
+  );
+}
+
+export default function CitizenMapPage() {
+  return (
+    <Suspense fallback={<MapFallback />}>
+      <MapContent />
+    </Suspense>
   );
 }
