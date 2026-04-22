@@ -45,6 +45,9 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   // New UI States
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; place_name: string; center: [number, number] }[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mapIncidents, setMapIncidents] = useState<any[]>([]);
@@ -312,15 +315,22 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   }, [mapIncidents, mapReady, addIncidentMarker]);
 
   // Focus on specific incident when navigated from notification
+  // Retry when mapIncidents updates (incidents may load after map is ready)
   useEffect(() => {
     if (!focusIncidentId || !map.current || !mapReady) return;
     const inc = mapIncidents.find(i => i.id === focusIncidentId);
     if (!inc) return;
-    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat;
-    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng;
-    if (!lat || !lng) return;
+    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat ?? inc.location_lat;
+    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng ?? inc.location_lng;
+    if (!lat || !lng) {
+      // No coords but we can still open the detail modal
+      setSelectedIncidentId(focusIncidentId);
+      return;
+    }
     map.current.flyTo({ center: [lng, lat], zoom: 17, duration: 1400, pitch: 55 });
-  }, [focusIncidentId, mapIncidents, loading]);
+    setSelectedIncidentId(focusIncidentId);
+    setIsSidebarOpen(true);
+  }, [focusIncidentId, mapIncidents, mapReady]);
 
   // Update highlight layer when affected edges change (e.g. after AI prediction)
   useEffect(() => {
@@ -378,6 +388,37 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
 
   const flyToIncident = (lng: number, lat: number) => {
     map.current?.flyTo({ center: [lng, lat], zoom: 17, essential: true, pitch: 60 });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (!value.trim()) { setSearchResults([]); return; }
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+        const encoded = encodeURIComponent(value);
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?access_token=${token}&country=vn&language=vi&limit=5&proximity=108.2122,16.0680`
+        );
+        const data = await res.json();
+        setSearchResults(
+          (data.features || []).map((f: { id: string; place_name: string; center: [number, number] }) => ({
+            id: f.id,
+            place_name: f.place_name,
+            center: f.center,
+          }))
+        );
+      } catch { setSearchResults([]); }
+      finally { setSearchLoading(false); }
+    }, 350);
+  };
+
+  const handleSelectResult = (result: { center: [number, number]; place_name: string }) => {
+    map.current?.flyTo({ center: result.center, zoom: 16, duration: 1200, pitch: 45 });
+    setSearchQuery(result.place_name);
+    setSearchResults([]);
   };
 
   // Stats
@@ -680,15 +721,42 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
           {/* Search Bar */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-md z-20 px-4">
             <div className="relative bg-card/90 backdrop-blur-xl border border-border shadow-2xl rounded-2xl flex items-center pr-2 pl-4 py-2 hover:border-primary/30 transition-colors focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
-              <Search className="w-5 h-5 text-muted-foreground mr-3" />
+              {searchLoading
+                ? <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-primary rounded-full animate-spin mr-3 shrink-0" />
+                : <Search className="w-5 h-5 text-muted-foreground mr-3 shrink-0" />}
               <input
                 type="text"
                 placeholder={t('trafficMap.searchPlaceholder')}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setSearchQuery(''); setSearchResults([]); } }}
                 className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/70 font-medium py-1 text-foreground"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                  className="p-1 hover:bg-muted rounded-lg transition-colors ml-1"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
+
+            {/* Dropdown results */}
+            {searchResults.length > 0 && (
+              <div className="mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden">
+                {searchResults.map(result => (
+                  <button
+                    key={result.id}
+                    onClick={() => handleSelectResult(result)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border/50 last:border-0"
+                  >
+                    <MapPin className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm truncate">{result.place_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Sidebar Toggle Button (if sidebar closed) */}
@@ -723,12 +791,20 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               {mapIncidents.map((inc: any) => {
-                const incLat = inc.lat || inc.location?.lat;
-                const incLng = inc.lng || inc.location?.lng;
+                const incLat = inc.lat ?? inc.latitude ?? inc.location?.lat ?? inc.location_lat;
+                const incLng = inc.lng ?? inc.longitude ?? inc.location?.lng ?? inc.location_lng;
+                const hasCoords = !!(incLat && incLng);
                 return (
                   <div
                     key={inc.id}
-                    onClick={() => incLng && incLat && flyToIncident(incLng, incLat)}
+                    onClick={() => {
+                      if (hasCoords) {
+                        flyToIncident(incLng, incLat);
+                        setSelectedIncidentId(inc.id);
+                      } else {
+                        setSelectedIncidentId(inc.id);
+                      }
+                    }}
                     className="p-4 bg-background/50 hover:bg-accent/50 border border-border rounded-xl cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 group"
                   >
                     <div className="flex gap-3">
@@ -742,10 +818,16 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-sm truncate group-hover:text-primary transition-colors">{inc.title}</h4>
                         <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground font-medium">
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {inc.severity || 'unknown'}</span>
-                          <span className="text-border">•</span>
-                          <span>{inc.created_at ? new Date(inc.created_at).toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : inc.time || ''}</span>
+                          <span className="flex items-center gap-1 truncate max-w-[120px]">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {inc.location_name || inc.area || inc.severity || '—'}
+                          </span>
+                          <span className="text-border shrink-0">•</span>
+                          <span className="shrink-0">{inc.created_at ? new Date(inc.created_at).toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : inc.time || ''}</span>
                         </div>
+                        {!hasCoords && (
+                          <p className="text-[10px] text-muted-foreground/50 mt-1 italic">{t('trafficMap.noCoords') || 'No location data'}</p>
+                        )}
                       </div>
                     </div>
                   </div>
