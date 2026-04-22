@@ -39,7 +39,7 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
       map = new mapboxgl.Map({
         container: mapRef.current!,
         style: isDark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
-        center: [lng, lat],
+        center: [Number(lng), Number(lat)],
         zoom: 15,
         attributionControl: false,
       });
@@ -106,7 +106,7 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
           <style>@keyframes ping{75%,100%{transform:scale(2.2);opacity:0}}</style>
         `;
         new mapboxgl.Marker({ element: markerEl, anchor: 'center' })
-          .setLngLat([lng, lat])
+          .setLngLat([Number(lng), Number(lat)])
           .addTo(map);
 
         map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
@@ -189,11 +189,11 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
 
           <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-xl rounded-xl px-3 py-2 border shadow-lg flex items-center gap-2 text-xs font-mono z-[5]">
             <Navigation className="w-3.5 h-3.5 text-rose-500" />
-            {lat.toFixed(5)}, {lng.toFixed(5)}
+            {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
           </div>
 
           <a
-            href={`https://www.google.com/maps?q=${lat},${lng}`}
+            href={`https://www.google.com/maps?q=${Number(lat)},${Number(lng)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 left-3 bg-background/90 backdrop-blur-xl rounded-lg px-2.5 py-1.5 border shadow-lg flex items-center gap-1.5 text-xs font-semibold hover:bg-background transition-colors z-[5]"

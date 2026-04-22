@@ -69,7 +69,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
       if (!originalDensityRef.current.has(f.properties.id)) {
         originalDensityRef.current.set(f.properties.id, f.properties.current_density);
       }
-      f.properties.current_density = Math.max(f.properties.current_density, INCIDENT_BOOST_DENSITY);
+      f.properties.current_density = Math.max(Number(f.properties.current_density) || 0, INCIDENT_BOOST_DENSITY);
     });
     const source = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
     if (source) source.setData(geojsonDataRef.current);
@@ -182,7 +182,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         // Recalculate KPIs
         let congested = 0, totalDen = 0;
         res.data.features.forEach((f: any) => {
-          const den = f.properties.current_density || 0;
+          const den = Number(f.properties.current_density) || 0;
           totalDen += den;
           if (den > 0.6) congested++;
         });
@@ -204,7 +204,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         f.properties.current_speed_kmh = upd.current_speed_kmh;
         f.properties.congestion_level = upd.congestion_level;
       }
-      const den = f.properties.current_density || 0;
+      const den = Number(f.properties.current_density) || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -256,7 +256,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
     let totalDen = 0;
     const count = geojsonDataRef.current.features.length;
     geojsonDataRef.current.features.forEach((f: any) => {
-      const den = f.properties.current_density || 0;
+      const den = Number(f.properties.current_density) || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -288,7 +288,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         feature.properties.current_speed_kmh = updateInfo.speed_kmh;
       }
 
-      const den = feature.properties.current_density || 0;
+      const den = Number(feature.properties.current_density) || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -403,7 +403,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
       let congested = 0;
       let totalDensity = 0;
       data.features.forEach((f: any) => {
-        const den = f.properties.current_density || 0;
+        const den = Number(f.properties.current_density) || 0;
         totalDensity += den;
         if (den > 0.6) congested++;
       });
@@ -594,11 +594,11 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
               <div class="text-xs text-muted-foreground mb-2">ID: ${id}</div>
               <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-semibold">${speedLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(current_speed_kmh || 0).toFixed(1)} km/h</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(Number(current_speed_kmh) || 0).toFixed(1)} km/h</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-xs font-semibold">${capacityLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((current_density || 0) * 100).toFixed(0)}%</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((Number(current_density) || 0) * 100).toFixed(0)}%</span>
               </div>
             </div>
           `;
@@ -789,7 +789,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
                 <Activity className="w-3.5 h-3.5 text-amber-500" /> {t('trafficMap.avgDensity')}
               </div>
               <div className="text-3xl font-heading font-black text-amber-500">
-                {(avgDensity * 100).toFixed(0)}%
+                {Number.isFinite(avgDensity) ? (avgDensity * 100).toFixed(0) : '—'}%
               </div>
             </div>
           </div>

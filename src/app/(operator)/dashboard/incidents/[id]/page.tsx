@@ -376,7 +376,7 @@ export default function IncidentDetailPage() {
                         </div>
                         {typeof pred.confidence_score === 'number' && pred.confidence_score > 0 && (
                           <span className="text-xs font-semibold text-muted-foreground">
-                            {t('op.confidence')}: <span className="text-primary">{((typeof pred.confidence_score === 'number' ? pred.confidence_score : 0) * 100).toFixed(0)}%</span>
+                            {t('op.confidence')}: <span className="text-primary">{(pred.confidence_score * 100).toFixed(0)}%</span>
                           </span>
                         )}
                       </div>
@@ -392,10 +392,10 @@ export default function IncidentDetailPage() {
                           {pred.prediction_edges.map((edge) => {
                             const congLevel = edge.congestion_level || 'moderate';
                             const cong = congestionColors[congLevel] || congestionColors.moderate;
-                            const density = Number(edge.predicted_density);
-                            const speed = Number(edge.predicted_speed);
-                            const validDensity = isFinite(density);
-                            const validSpeed = isFinite(speed);
+                            const density = Number(edge.predicted_density) || 0;
+                            const speed = Number(edge.predicted_speed) || 0;
+                            const validDensity = isFinite(density) && density >= 0;
+                            const validSpeed = isFinite(speed) && speed >= 0;
                             return (
                               <div key={edge.id} className="px-4 py-3 flex items-center gap-3">
                                 <div className={`w-1 h-10 rounded-full ${cong.bar} shrink-0`} />
