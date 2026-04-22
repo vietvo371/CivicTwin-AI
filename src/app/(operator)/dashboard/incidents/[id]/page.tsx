@@ -217,7 +217,7 @@ export default function IncidentDetailPage() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-6xl mx-auto flex items-center justify-center p-12">
+      <div className="w-full flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin" />
           <p>{t('common.loading')}</p>
@@ -228,7 +228,7 @@ export default function IncidentDetailPage() {
 
   if (error || !incident) {
     return (
-      <div className="w-full max-w-6xl mx-auto p-6 text-center mt-12">
+      <div className="w-full p-6 text-center mt-12">
         <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-bold">{error || t('common.noData')}</h2>
         <Button variant="outline" className="mt-6" onClick={() => router.push('/dashboard/incidents')}>
@@ -266,7 +266,7 @@ export default function IncidentDetailPage() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+    <div className="w-full space-y-6 animate-in fade-in duration-500 pb-12">
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

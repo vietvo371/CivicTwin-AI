@@ -107,7 +107,7 @@ export default function SimulationPage() {
     : '0';
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500 pb-8">
+    <div className="w-full space-y-6 animate-in fade-in duration-500 pb-8">
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
