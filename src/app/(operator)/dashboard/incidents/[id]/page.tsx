@@ -1,17 +1,20 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
-import { 
-  ArrowLeft, AlertTriangle, MapPin, Clock, Info, User, Activity, 
+import {
+  ArrowLeft, AlertTriangle, MapPin, Clock, Info, User, Activity,
   CheckCircle2, AlertCircle, FileText, BrainCircuit, ShieldAlert,
-  Navigation, Compass, Calendar, Timer, ExternalLink
+  Navigation, Compass, Calendar, Timer, Image as ImageIcon,
+  X, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import IncidentMapCard from '@/components/IncidentMapCard';
 
 interface UserType {
   id: number;
@@ -59,6 +62,7 @@ interface IncidentDetail {
   location?: { lat: number; lng: number };
   predictions?: Prediction[];
   recommendations?: Recommendation[];
+  images?: string[];
 }
 
 const severityConfig: Record<string, { color: string; bg: string; border: string; badge: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -93,50 +97,98 @@ function formatDuration(start: string, end: string | null): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-// Mini Map Component using Mapbox Static Images API
-function MiniMap({ lat, lng }: { lat: number; lng: number }) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+function ImageGallery({ images }: { images: string[] }) {
+  const [current, setCurrent] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
 
-  useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+  if (!images || images.length === 0) return null;
 
-    const loadMap = async () => {
-      const mapboxgl = (await import('mapbox-gl')).default;
-      await import('mapbox-gl/dist/mapbox-gl.css');
-      
-      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-      
-      const map = new mapboxgl.Map({
-        container: mapRef.current!,
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: [lng, lat],
-        zoom: 14,
-        interactive: true,
-        attributionControl: false,
-      });
+  const prev = () => setCurrent(c => (c - 1 + images.length) % images.length);
+  const next = () => setCurrent(c => (c + 1) % images.length);
 
-      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+  return (
+    <>
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ImageIcon className="w-4.5 h-4.5 text-primary" />
+            {images.length > 1 ? `${images.length} ${'Hình ảnh'}` : 'Hình ảnh'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative rounded-xl overflow-hidden bg-muted group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={images[current]}
+              alt={`Hình ảnh sự cố ${current + 1}`}
+              className="w-full h-56 object-cover transition-opacity"
+            />
+            <button
+              onClick={() => setLightbox(true)}
+              className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"
+            >
+              <div className="bg-black/60 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+            </button>
 
-      // Pulse marker
-      const markerEl = document.createElement('div');
-      markerEl.innerHTML = `
-        <div style="position:relative;width:24px;height:24px;">
-          <div style="position:absolute;inset:0;border-radius:50%;background:rgba(239,68,68,0.3);animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>
-          <div style="position:absolute;inset:4px;border-radius:50%;background:#ef4444;border:3px solid white;box-shadow:0 0 10px rgba(239,68,68,0.6);"></div>
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors backdrop-blur-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={next}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors backdrop-blur-sm"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                  {current + 1} / {images.length}
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <button
+            onClick={prev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-white/10 hover:bg-white/20 rounded-full p-3 backdrop-blur-sm"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-white/10 hover:bg-white/20 rounded-full p-3 backdrop-blur-sm"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={images[current]}
+            alt={`Hình ảnh sự cố ${current + 1}`}
+            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+          />
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm font-semibold px-4 py-1.5 rounded-full backdrop-blur-sm">
+            {current + 1} / {images.length}
+          </div>
         </div>
-        <style>@keyframes ping{75%,100%{transform:scale(2);opacity:0}}</style>
-      `;
-      new mapboxgl.Marker({ element: markerEl }).setLngLat([lng, lat]).addTo(map);
-
-      mapInstance.current = map;
-    };
-
-    loadMap();
-    return () => { mapInstance.current?.remove(); mapInstance.current = null; };
-  }, [lat, lng]);
-
-  return <div ref={mapRef} className="w-full h-full rounded-xl" />;
+      )}
+    </>
+  );
 }
 
 export default function IncidentDetailPage() {
@@ -161,13 +213,13 @@ export default function IncidentDetailPage() {
       }
     };
     fetchDetail();
-  }, [params]);
+  }, [params, t]);
 
   if (loading) {
     return (
       <div className="w-full max-w-6xl mx-auto flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
-          <Activity className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin" />
           <p>{t('common.loading')}</p>
         </div>
       </div>
@@ -191,6 +243,27 @@ export default function IncidentDetailPage() {
   const StatusIcon = statConf.icon;
   const hasLocation = incident.location && incident.location.lat;
   const duration = formatDuration(incident.created_at, incident.resolved_at);
+
+  // Extract all affected edge IDs from AI predictions
+  const highlightedEdgeIds: number[] = [];
+  if (incident.predictions) {
+    incident.predictions.forEach(pred => {
+      if (pred.prediction_edges) {
+        pred.prediction_edges.forEach(edge => {
+          if (edge.edge_id && !highlightedEdgeIds.includes(edge.edge_id)) {
+            highlightedEdgeIds.push(edge.edge_id);
+          }
+        });
+      }
+    });
+  }
+
+  const congestionColors: Record<string, { bg: string; text: string; bar: string }> = {
+    low: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', bar: 'bg-emerald-500' },
+    moderate: { bg: 'bg-amber-500/10', text: 'text-amber-600', bar: 'bg-amber-500' },
+    high: { bg: 'bg-orange-500/10', text: 'text-orange-600', bar: 'bg-orange-500' },
+    severe: { bg: 'bg-red-500/10', text: 'text-red-600', bar: 'bg-red-500' },
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
@@ -220,7 +293,7 @@ export default function IncidentDetailPage() {
             </p>
           </div>
         </div>
-        
+
         <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-semibold text-sm shadow-sm ${statConf.color} ${statConf.bg}`}>
           <StatusIcon className="w-5 h-5" />
           {t(`enums.incidentStatus.${incident.status}`)}
@@ -252,24 +325,16 @@ export default function IncidentDetailPage() {
         <div className="lg:col-span-3 space-y-6">
           {/* Map + Location */}
           {hasLocation && (
-            <Card className="border-border/50 shadow-sm overflow-hidden">
-              <div className="h-[280px] relative">
-                <MiniMap lat={incident.location!.lat} lng={incident.location!.lng} />
-                <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-xl rounded-xl px-3 py-2 border shadow-lg flex items-center gap-2 text-xs font-mono">
-                  <Navigation className="w-3.5 h-3.5 text-rose-500" />
-                  {parseFloat(incident.location!.lat.toString()).toFixed(5)}, {parseFloat(incident.location!.lng.toString()).toFixed(5)}
-                </div>
-                <a
-                  href={`https://www.google.com/maps?q=${incident.location!.lat},${incident.location!.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute top-3 left-3 bg-background/90 backdrop-blur-xl rounded-lg px-2.5 py-1.5 border shadow-lg flex items-center gap-1.5 text-xs font-semibold hover:bg-background transition-colors"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Google Maps
-                </a>
-              </div>
-            </Card>
+            <IncidentMapCard
+              lat={incident.location!.lat}
+              lng={incident.location!.lng}
+              highlightedEdgeIds={highlightedEdgeIds}
+            />
+          )}
+
+          {/* Image Gallery */}
+          {incident.images && incident.images.length > 0 && (
+            <ImageGallery images={incident.images} />
           )}
 
           {/* Description */}
@@ -299,78 +364,69 @@ export default function IncidentDetailPage() {
             <CardContent>
               {incident.predictions && incident.predictions.length > 0 ? (
                 <div className="space-y-4">
-                  {incident.predictions.map(pred => {
-                    const congestionColors: Record<string, { bg: string; text: string; bar: string }> = {
-                      low: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', bar: 'bg-emerald-500' },
-                      moderate: { bg: 'bg-amber-500/10', text: 'text-amber-600', bar: 'bg-amber-500' },
-                      high: { bg: 'bg-orange-500/10', text: 'text-orange-600', bar: 'bg-orange-500' },
-                      severe: { bg: 'bg-red-500/10', text: 'text-red-600', bar: 'bg-red-500' },
-                    };
-                    return (
-                      <div key={pred.id} className="rounded-xl border border-primary/20 overflow-hidden">
-                        {/* Prediction Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-primary/[0.03] border-b border-primary/10">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-semibold text-primary">{t('op.evaluationSession', { id: String(pred.id) })}</span>
-                            <Badge variant={pred.status === 'completed' ? 'default' : 'outline'} className={pred.status === 'completed' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}>
-                              {t(`enums.predictionStatus.${pred.status}`)}
-                            </Badge>
-                          </div>
-                          {typeof pred.confidence_score === 'number' && pred.confidence_score > 0 && (
-                            <span className="text-xs font-semibold text-muted-foreground">
-                              {t('op.confidence')}: <span className="text-primary">{(pred.confidence_score * 100).toFixed(0)}%</span>
-                            </span>
-                          )}
+                  {incident.predictions.map(pred => (
+                    <div key={pred.id} className="rounded-xl border border-primary/20 overflow-hidden">
+                      {/* Prediction Header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-primary/[0.03] border-b border-primary/10">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-primary">{t('op.evaluationSession', { id: String(pred.id) })}</span>
+                          <Badge variant={pred.status === 'completed' ? 'default' : 'outline'} className={pred.status === 'completed' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}>
+                            {t(`enums.predictionStatus.${pred.status}`)}
+                          </Badge>
                         </div>
-
-                        {/* Affected Edges List */}
-                        {pred.prediction_edges && pred.prediction_edges.length > 0 ? (
-                          <div className="divide-y divide-border">
-                            <div className="px-4 py-2.5 bg-muted/20">
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                {t('op.affectedSegments', { n: String(pred.prediction_edges.length) })}
-                              </p>
-                            </div>
-                            {pred.prediction_edges.map((edge) => {
-                              const congLevel = edge.congestion_level || 'moderate';
-                              const cong = congestionColors[congLevel] || congestionColors.moderate;
-                              const density = parseFloat(edge.predicted_density);
-                              const speed = parseFloat(edge.predicted_speed);
-                              return (
-                                <div key={edge.id} className="px-4 py-3 flex items-center gap-3">
-                                  {/* Congestion indicator bar */}
-                                  <div className={`w-1 h-10 rounded-full ${cong.bar} shrink-0`} />
-                                  
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-sm font-semibold">{edge.edge?.name || `Edge #${edge.edge_id}`}</span>
-                                      <Badge className={`text-[9px] font-bold uppercase tracking-wider ${cong.bg} ${cong.text} border-0`}>
-                                        {t(`enums.congestionLevel.${congLevel}`)}
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                      <span className="flex items-center gap-1">
-                                        <Activity className="w-3 h-3" />
-                                        {t('op.density')}: <strong className="text-foreground">{!isNaN(density) ? density.toFixed(1) : '—'}</strong>
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <Navigation className="w-3 h-3" />
-                                        {t('op.speed')}: <strong className="text-foreground">{!isNaN(speed) ? `${speed.toFixed(0)} km/h` : '—'}</strong>
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="px-4 py-4 text-center text-sm text-muted-foreground">
-                            {t('op.noEdgeData')}
-                          </div>
+                        {typeof pred.confidence_score === 'number' && pred.confidence_score > 0 && (
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {t('op.confidence')}: <span className="text-primary">{(pred.confidence_score * 100).toFixed(0)}%</span>
+                          </span>
                         )}
                       </div>
-                    );
-                  })}
+
+                      {/* Affected Edges List */}
+                      {pred.prediction_edges && pred.prediction_edges.length > 0 ? (
+                        <div className="divide-y divide-border">
+                          <div className="px-4 py-2.5 bg-muted/20">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                              {t('op.affectedSegments', { n: String(pred.prediction_edges.length) })}
+                            </p>
+                          </div>
+                          {pred.prediction_edges.map((edge) => {
+                            const congLevel = edge.congestion_level || 'moderate';
+                            const cong = congestionColors[congLevel] || congestionColors.moderate;
+                            const density = parseFloat(edge.predicted_density);
+                            const speed = parseFloat(edge.predicted_speed);
+                            return (
+                              <div key={edge.id} className="px-4 py-3 flex items-center gap-3">
+                                <div className={`w-1 h-10 rounded-full ${cong.bar} shrink-0`} />
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-semibold">{edge.edge?.name || `Edge #${edge.edge_id}`}</span>
+                                    <Badge className={`text-[9px] font-bold uppercase tracking-wider ${cong.bg} ${cong.text} border-0`}>
+                                      {t(`enums.congestionLevel.${congLevel}`)}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Activity className="w-3 h-3" />
+                                      {t('op.density')}: <strong className="text-foreground">{!isNaN(density) ? density.toFixed(1) : '—'}</strong>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Navigation className="w-3 h-3" />
+                                      {t('op.speed')}: <strong className="text-foreground">{!isNaN(speed) ? `${speed.toFixed(0)} km/h` : '—'}</strong>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="px-4 py-4 text-center text-sm text-muted-foreground">
+                          {t('op.noEdgeData')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center p-8 bg-muted/30 border border-dashed rounded-xl flex flex-col items-center justify-center gap-3">

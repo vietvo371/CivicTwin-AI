@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { useEchoMulti } from '@/hooks/useEcho';
@@ -126,11 +127,16 @@ type AIJob = Record<string, any>;
 
 export default function DashboardPage() {
   const { t, locale } = useTranslation();
+  const searchParams = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [aiFeed, setAiFeed] = useState<AIJob[]>([]);
   const [pendingRecs, setPendingRecs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<number[]>([]);
+
+  const focusIncidentId = searchParams.get('incident')
+    ? Number(searchParams.get('incident'))
+    : undefined;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -260,129 +266,154 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Main Content: Map + Sidebar */}
+      {/* Traffic Map — Full Width */}
+      <Card className="bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden border-border/80">
+        <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-500" />
+            {t('op.liveTrafficGrid')}
+            {highlightedEdgeIds.length > 0 && (
+              <span className="flex items-center gap-1 text-orange-400 font-bold text-[11px] bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full animate-pulse">
+                <AlertTriangle className="w-3 h-3" />
+                {highlightedEdgeIds.length} đoạn bị ảnh hưởng
+              </span>
+            )}
+          </CardTitle>
+          <Link href="/map" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+            {t('op.fullScreen')} <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </CardHeader>
+        <CardContent className="p-3 pt-2">
+          <div className="h-[500px] rounded-xl overflow-hidden border border-border/50 relative">
+            <TrafficMap isPublic={true} highlightedEdgeIds={highlightedEdgeIds} focusIncidentId={focusIncidentId} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Traffic Flow Legend */}
+      <Card className="bg-card/40 backdrop-blur-xl border-border/80 shadow-lg">
+        <CardContent className="p-4 flex flex-wrap items-center justify-center gap-6">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('trafficMap.flowIntensity')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
+            <span className="text-xs text-muted-foreground font-medium">{t('trafficMap.flowNone')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]" />
+            <span className="text-xs text-muted-foreground font-medium">{t('trafficMap.flowLight')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.6)]" />
+            <span className="text-xs text-muted-foreground font-medium">{t('trafficMap.flowModerate')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
+            <span className="text-xs text-muted-foreground font-medium">{t('trafficMap.flowHeavy')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-rose-900 shadow-[0_0_6px_rgba(136,19,55,0.6)]" />
+            <span className="text-xs text-muted-foreground font-medium">{t('trafficMap.flowGridlock')}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Incidents + AI Activity — Same Row */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Traffic Map */}
-        <div className="lg:col-span-8">
-          <Card className="bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden border-border/80">
-            <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-500" />
-                {t('op.liveTrafficGrid')}
-                {highlightedEdgeIds.length > 0 && (
-                  <span className="flex items-center gap-1 text-orange-400 font-bold text-[11px] bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full animate-pulse">
-                    <AlertTriangle className="w-3 h-3" />
-                    {highlightedEdgeIds.length} đoạn bị ảnh hưởng
-                  </span>
-                )}
-              </CardTitle>
-              <Link href="/dashboard" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                {t('op.fullScreen')} <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
-            </CardHeader>
-            <CardContent className="p-3 pt-2">
-              <div className="h-[500px] rounded-xl overflow-hidden border border-border/50 relative">
-                <TrafficMap hideOverlays highlightedEdgeIds={highlightedEdgeIds} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Recent Incidents */}
-          <Card className="bg-card/40 backdrop-blur-xl shadow-2xl border-border/80">
-            <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                {t('op.recentIncidents')}
-              </CardTitle>
-              <Link href="/dashboard/incidents" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                {t('op.viewAll')} <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <div className="space-y-2">
-                {loading ? Array.from({ length: 4 }).map((_, i) => <SidebarItemSkeleton key={i} />) : incidents.slice(0, 5).map((inc) => {
-                  const sev = severityStyle[inc.severity] || severityStyle.medium;
-                  const stat = statusStyle[inc.status] || statusStyle.open;
-                  return (
-                    <Link
-                      key={inc.id}
-                      href="/dashboard/incidents"
-                      className="flex items-start gap-3 p-3 rounded-xl bg-background/50 hover:bg-accent/50 border border-transparent hover:border-border transition-all group/item cursor-pointer"
-                    >
-                      <div className="mt-0.5 shrink-0">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 ${inc.status === 'open' ? 'bg-blue-500 animate-pulse' : inc.status === 'investigating' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate group-hover/item:text-primary transition-colors">{inc.title}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Badge className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 border ${sev}`}>
-                            {t(`enums.incidentSeverity.${inc.severity}`)}
-                          </Badge>
-                          <span className={`text-[11px] font-medium flex items-center gap-1 ${stat.color}`}>
-                            {stat.icon}
-                            {t(`enums.incidentStatus.${inc.status}`)}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* AI Activity Feed */}
-          <Card className="bg-card/40 backdrop-blur-xl shadow-2xl border-border/80">
-            <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Brain className="w-4 h-4 text-violet-500" />
-                {t('op.aiActivity')}
-              </CardTitle>
-              <Link href="/dashboard/predictions" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                {t('op.details')} <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <div className="space-y-2">
-                {aiFeed.map((ai) => (
-                  <div
-                    key={ai.id}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-background/50 border border-transparent hover:border-border transition-all"
+        {/* Recent Incidents */}
+        <Card className="lg:col-span-6 bg-card/40 backdrop-blur-xl shadow-2xl border-border/80">
+          <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-orange-500" />
+              {t('op.recentIncidents')}
+            </CardTitle>
+            <Link href="/dashboard/incidents" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+              {t('op.viewAll')} <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="space-y-2">
+              {loading ? Array.from({ length: 4 }).map((_, i) => <SidebarItemSkeleton key={i} />) : incidents.slice(0, 5).map((inc) => {
+                const sev = severityStyle[inc.severity] || severityStyle.medium;
+                const stat = statusStyle[inc.status] || statusStyle.open;
+                return (
+                  <Link
+                    key={inc.id}
+                    href={`/dashboard/incidents/${inc.id}`}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-background/50 hover:bg-accent/50 border border-transparent hover:border-border transition-all group/item cursor-pointer"
                   >
                     <div className="mt-0.5 shrink-0">
-                      <div className={`p-1.5 rounded-lg ${ai.status === 'completed' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                        <Zap className={`w-3.5 h-3.5 ${ai.status === 'completed' ? 'text-emerald-500' : 'text-rose-500'}`} />
-                      </div>
+                      <div className={`w-2 h-2 rounded-full mt-1.5 ${inc.status === 'open' ? 'bg-blue-500 animate-pulse' : inc.status === 'investigating' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold">Job #{ai.id}</p>
-                        <Badge variant={ai.status === 'completed' ? 'outline' : 'destructive'} className="text-[9px] uppercase tracking-wider h-5">
-                          {t(`enums.predictionStatus.${ai.status}`)}
+                      <p className="text-sm font-semibold truncate group-hover/item:text-primary transition-colors">{inc.title}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Badge className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 border ${sev}`}>
+                          {t(`enums.incidentSeverity.${inc.severity}`)}
                         </Badge>
+                        <span className={`text-[11px] font-medium flex items-center gap-1 ${stat.color}`}>
+                          {stat.icon}
+                          {t(`enums.incidentStatus.${inc.status}`)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground font-medium">
-                        <span>{t('op.incidentRef', { id: String(ai.incident_id) })}</span>
-                        <span className="text-border">|</span>
-                        <span>{ai.model_version}</span>
-                        <span className="text-border">|</span>
-                        <span>{ai.processing_time_ms}ms</span>
-                      </div>
-                      {(ai.prediction_edges?.length || ai.edges_affected || 0) > 0 && (
-                         <p className="text-[11px] text-primary/80 font-semibold mt-1">
-                           {t('op.segmentsAnalyzed', { n: String(ai.prediction_edges?.length || ai.edges_affected) })}
-                         </p>
-                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Activity Feed */}
+        <Card className="lg:col-span-6 bg-card/40 backdrop-blur-xl shadow-2xl border-border/80">
+          <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Brain className="w-4 h-4 text-violet-500" />
+              {t('op.aiActivity')}
+            </CardTitle>
+            <Link href="/dashboard/predictions" className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+              {t('op.details')} <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="space-y-2">
+              {aiFeed.map((ai) => (
+                <div
+                  key={ai.id}
+                  className="flex items-start gap-3 p-3 rounded-xl bg-background/50 border border-transparent hover:border-border transition-all"
+                >
+                  <div className="mt-0.5 shrink-0">
+                    <div className={`p-1.5 rounded-lg ${ai.status === 'completed' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+                      <Zap className={`w-3.5 h-3.5 ${ai.status === 'completed' ? 'text-emerald-500' : 'text-rose-500'}`} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">Job #{ai.id}</p>
+                      <Badge variant={ai.status === 'completed' ? 'outline' : 'destructive'} className="text-[9px] uppercase tracking-wider h-5">
+                        {t(`enums.predictionStatus.${ai.status}`)}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground font-medium">
+                      <span>{t('op.incidentRef', { id: String(ai.incident_id) })}</span>
+                      <span className="text-border">|</span>
+                      <span>{ai.model_version}</span>
+                      <span className="text-border">|</span>
+                      <span>{ai.processing_time_ms}ms</span>
+                    </div>
+                    {(ai.prediction_edges?.length || ai.edges_affected || 0) > 0 && (
+                       <p className="text-[11px] text-primary/80 font-semibold mt-1">
+                         {t('op.segmentsAnalyzed', { n: String(ai.prediction_edges?.length || ai.edges_affected) })}
+                       </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

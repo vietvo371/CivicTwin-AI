@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth';
 import Sidebar from '@/components/Sidebar';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
 function DashboardGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -37,7 +37,13 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <main className="flex-1 transition-all duration-300 pl-[72px] lg:pl-[260px] min-w-0 overflow-x-auto">
         <div className="p-4 md:p-6 lg:p-8">
-          {children}
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background">
+              <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+            </div>
+          }>
+            {children}
+          </Suspense>
         </div>
       </main>
     </div>

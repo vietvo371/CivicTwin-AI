@@ -253,7 +253,16 @@ export default function ReportIncidentDialog() {
 
     try {
       const formData = new FormData();
-      formData.append('title', `${t(`report.incidentType.${incidentType}`)} - ${location}`);
+      // Smart title: Vision AI description > AI Parse suggestion > generic fallback
+      const visionDesc = aiVisionResult?.description;
+      const typeLabel = t(`enums.incidentType.${incidentType}`);
+      let title = visionDesc
+        ? `${visionDesc} tại ${location}`
+        : aiSuggestion
+          ? aiSuggestion
+          : `${typeLabel} tại ${location}`;
+
+      formData.append('title', title);
       formData.append('type', incidentType);
       formData.append('severity', severity);
       if (description) formData.append('description', description);
@@ -374,11 +383,11 @@ export default function ReportIncidentDialog() {
                   <SelectValue placeholder={t('report.selectType')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
-                  <SelectItem value="accident">{t('report.incidentType.accident')}</SelectItem>
-                  <SelectItem value="congestion">{t('report.incidentType.congestion')}</SelectItem>
-                  <SelectItem value="construction">{t('report.incidentType.construction')}</SelectItem>
-                  <SelectItem value="weather">{t('report.incidentType.weather')}</SelectItem>
-                  <SelectItem value="other">{t('report.incidentType.other')}</SelectItem>
+                  <SelectItem value="accident">{t('enums.incidentType.accident')}</SelectItem>
+                  <SelectItem value="congestion">{t('enums.incidentType.congestion')}</SelectItem>
+                  <SelectItem value="construction">{t('enums.incidentType.construction')}</SelectItem>
+                  <SelectItem value="weather">{t('enums.incidentType.weather')}</SelectItem>
+                  <SelectItem value="other">{t('enums.incidentType.other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -450,7 +459,7 @@ export default function ReportIncidentDialog() {
                 <div className="flex flex-wrap gap-2">
                   {aiVisionResult.type && (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-500/15 text-blue-300 border border-blue-500/25">
-                      {aiVisionResult.type}
+                      {t(`enums.incidentType.${aiVisionResult.type}`)}
                     </span>
                   )}
                   {aiVisionResult.severity && (
@@ -459,7 +468,7 @@ export default function ReportIncidentDialog() {
                           aiVisionResult.severity === 'medium' ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' :
                             'bg-emerald-500/15 text-emerald-300 border-emerald-500/25'
                       }`}>
-                      {aiVisionResult.severity}
+                      {t(`enums.incidentSeverity.${aiVisionResult.severity}`)}
                     </span>
                   )}
                 </div>
