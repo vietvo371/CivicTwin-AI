@@ -293,10 +293,8 @@ export default function IncidentsPage() {
         </div>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger>
-            <Button className="shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4 mr-2" /> {t('op.reportIncident')}
-            </Button>
+          <DialogTrigger className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Plus className="w-4 h-4" /> {t('op.reportIncident')}
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
