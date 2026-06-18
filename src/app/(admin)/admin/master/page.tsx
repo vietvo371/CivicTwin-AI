@@ -72,7 +72,7 @@ export default function MasterDataPage() {
   const activeSensors = sensors.filter(s => s.status === 'active').length;
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/50 p-6 rounded-2xl border border-border backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -317,10 +317,10 @@ export default function MasterDataPage() {
                               {st.icon} {t(`master.sensorStatus.${sensor.status}`)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell className="text-xs text-muted-foreground" suppressHydrationWarning>
                             {sensor.last_active_at ? new Date(sensor.last_active_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell className="text-xs text-muted-foreground" suppressHydrationWarning>
                             {sensor.installed_at ? new Date(sensor.installed_at).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US') : '—'}
                           </TableCell>
                         </TableRow>

@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css" rel="stylesheet" />
       </head>
-      <body className="antialiased min-h-screen bg-background text-foreground font-body">
+      <body className="antialiased min-h-screen bg-background text-foreground font-body" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <I18nProvider>
             <AuthProvider>

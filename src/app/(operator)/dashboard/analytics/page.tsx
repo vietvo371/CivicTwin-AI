@@ -17,12 +17,15 @@ const SeverityPieChart = dynamic(() => import('@/components/AnalyticsCharts').th
 const DensityHistogram = dynamic(() => import('@/components/AnalyticsCharts').then(m => m.DensityHistogram), { ssr: false, loading: () => <ChartSkeleton /> });
 const TypeBarChart = dynamic(() => import('@/components/AnalyticsCharts').then(m => m.TypeBarChart), { ssr: false, loading: () => <ChartSkeleton /> });
 
+// Stable heights to avoid hydration mismatch (no Math.random in render)
+const SKELETON_HEIGHTS = [45, 72, 58, 83, 41, 67, 55, 79];
+
 function ChartSkeleton() {
   return (
     <div className="h-[240px] w-full p-4 space-y-3">
       <div className="flex items-end gap-2 h-full">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex-1 bg-muted animate-pulse rounded-t" style={{ height: `${30 + Math.random() * 60}%`, animationDelay: `${i * 100}ms` }} />
+        {SKELETON_HEIGHTS.map((height, i) => (
+          <div key={i} className="flex-1 bg-muted animate-pulse rounded-t" style={{ height: `${height}%`, animationDelay: `${i * 100}ms` }} />
         ))}
       </div>
       <div className="flex justify-between">
@@ -131,7 +134,7 @@ export default function AnalyticsPage() {
   const { kpis } = data;
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500 pb-8">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-8">
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -155,8 +158,8 @@ export default function AnalyticsPage() {
         <KPICard icon={ShieldCheck} color="emerald" label={t('op.resolutionRate')} value={`${kpis.resolution_rate}%`} sub={`${kpis.resolved_incidents}/${kpis.total_incidents}`} />
         <KPICard icon={Cpu} color="blue" label={t('op.aiSessions')} value={kpis.total_predictions} sub={`${kpis.completed_predictions} ${t('op.completedRuns')}`} />
         <KPICard icon={Clock} color="amber" label={t('op.avgProcessingTime')} value={`${kpis.avg_processing_time_ms}ms`} sub={t('op.aiPredictionSpeed')} />
-        <KPICard icon={Gauge} color="orange" label={t('op.avgDensity')} value={`${((kpis.avg_density ?? 0) * 100).toFixed(0)}%`} sub={`${kpis.congested_edges}/${kpis.total_edges} ${t('op.congested')}`} />
-        <KPICard icon={TrendingUp} color="violet" label={t('op.aiConfidence')} value={`${((kpis.avg_confidence ?? 0) * 100).toFixed(0)}%`} sub={t('op.avgConfidence')} />
+        <KPICard icon={Gauge} color="orange" label={t('op.avgDensity')} value={`${(kpis.avg_density * 100).toFixed(0)}%`} sub={`${kpis.congested_edges}/${kpis.total_edges} ${t('op.congested')}`} />
+        <KPICard icon={TrendingUp} color="violet" label={t('op.aiConfidence')} value={`${(kpis.avg_confidence * 100).toFixed(0)}%`} sub={t('op.avgConfidence')} />
       </div>
 
       {/* ─── Row 1: Timeline + Severity Pie ─── */}

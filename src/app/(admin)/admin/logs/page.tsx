@@ -53,7 +53,7 @@ export default function LogsPage() {
   });
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/50 p-6 rounded-2xl border border-border backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -131,7 +131,7 @@ export default function LogsPage() {
                               <Database className="w-3 h-3" /> {log.subject_type.split('\\').pop()} #{log.subject_id}
                             </span>
                           )}
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1" suppressHydrationWarning>
                             <Clock className="w-3 h-3" /> {new Date(log.created_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
                           </span>
                         </div>

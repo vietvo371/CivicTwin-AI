@@ -3,10 +3,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import vi from '@/locales/vi.json';
 import en from '@/locales/en.json';
+import th from '@/locales/th.json';
+import id from '@/locales/id.json';
+import ms from '@/locales/ms.json';
+import tl from '@/locales/tl.json';
+import km from '@/locales/km.json';
+import lo from '@/locales/lo.json';
+import my from '@/locales/my.json';
 
-export type Locale = 'vi' | 'en';
+export type Locale = 'vi' | 'en' | 'th' | 'id' | 'ms' | 'tl' | 'km' | 'lo' | 'my';
 
-const translations: Record<Locale, Record<string, any>> = { vi, en };
+const translations: Record<Locale, Record<string, any>> = { vi, en, th, id, ms, tl, km, lo, my };
 
 function getNestedValue(obj: any, path: string): string {
   return path.split('.').reduce((acc, key) => acc?.[key], obj) ?? path;
@@ -33,7 +40,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
 
     const saved = localStorage.getItem('civictwin-locale') as Locale;
-    if (saved && (saved === 'vi' || saved === 'en')) {
+    if (saved && translations[saved]) {
       setLocaleState(saved);
       document.documentElement.lang = saved;
     }

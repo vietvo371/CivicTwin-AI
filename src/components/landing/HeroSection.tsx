@@ -85,12 +85,11 @@ function FloatingParticles() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className={`absolute rounded-full ${p.color} animate-float-particle`}
+          className={`absolute rounded-full ${p.color} animate-float-particle opacity-40`}
           style={{
             left: `${p.x}%`, top: `${p.y}%`,
             width: `${p.size}px`, height: `${p.size}px`,
             '--duration': `${p.duration}s`, '--delay': `${p.delay}s`,
-            filter: `blur(${p.size > 4 ? 1 : 0}px)`,
           } as React.CSSProperties}
         />
       ))}

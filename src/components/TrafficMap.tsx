@@ -35,6 +35,13 @@ interface TrafficMapProps {
 export default function TrafficMap({ isPublic = false, hideOverlays = false, onMapClick, highlightedEdgeIds = [], focusIncidentId }: TrafficMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const geoJsonPromiseRef = useRef<Promise<any> | null>(null);
+
+  // Pre-fetch edges immediately on mount to eliminate the waterfall
+  useEffect(() => {
+    const endpoint = isPublic ? '/public/edges/geojson' : '/edges/geojson';
+    geoJsonPromiseRef.current = api.get(endpoint).then(res => res.data);
+  }, [isPublic]);
   const { theme, resolvedTheme } = useTheme();
   const { t, locale } = useTranslation();
 
@@ -45,9 +52,6 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   // New UI States
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; place_name: string; center: [number, number] }[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mapIncidents, setMapIncidents] = useState<any[]>([]);
@@ -72,7 +76,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
       if (!originalDensityRef.current.has(f.properties.id)) {
         originalDensityRef.current.set(f.properties.id, f.properties.current_density);
       }
-      f.properties.current_density = Math.max(Number(f.properties.current_density) || 0, INCIDENT_BOOST_DENSITY);
+      f.properties.current_density = Math.max(f.properties.current_density, INCIDENT_BOOST_DENSITY);
     });
     const source = map.current.getSource('traffic-edges') as mapboxgl.GeoJSONSource;
     if (source) source.setData(geojsonDataRef.current);
@@ -185,7 +189,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         // Recalculate KPIs
         let congested = 0, totalDen = 0;
         res.data.features.forEach((f: any) => {
-          const den = Number(f.properties.current_density) || 0;
+          const den = f.properties.current_density || 0;
           totalDen += den;
           if (den > 0.6) congested++;
         });
@@ -207,7 +211,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         f.properties.current_speed_kmh = upd.current_speed_kmh;
         f.properties.congestion_level = upd.congestion_level;
       }
-      const den = Number(f.properties.current_density) || 0;
+      const den = f.properties.current_density || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -259,7 +263,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
     let totalDen = 0;
     const count = geojsonDataRef.current.features.length;
     geojsonDataRef.current.features.forEach((f: any) => {
-      const den = Number(f.properties.current_density) || 0;
+      const den = f.properties.current_density || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -291,7 +295,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         feature.properties.current_speed_kmh = updateInfo.speed_kmh;
       }
 
-      const den = Number(feature.properties.current_density) || 0;
+      const den = feature.properties.current_density || 0;
       totalDen += den;
       if (den > 0.6) congested++;
     });
@@ -315,22 +319,15 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
   }, [mapIncidents, mapReady, addIncidentMarker]);
 
   // Focus on specific incident when navigated from notification
-  // Retry when mapIncidents updates (incidents may load after map is ready)
   useEffect(() => {
     if (!focusIncidentId || !map.current || !mapReady) return;
     const inc = mapIncidents.find(i => i.id === focusIncidentId);
     if (!inc) return;
-    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat ?? inc.location_lat;
-    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng ?? inc.location_lng;
-    if (!lat || !lng) {
-      // No coords but we can still open the detail modal
-      setSelectedIncidentId(focusIncidentId);
-      return;
-    }
+    const lat = inc.lat ?? inc.latitude ?? inc.location?.lat;
+    const lng = inc.lng ?? inc.longitude ?? inc.location?.lng;
+    if (!lat || !lng) return;
     map.current.flyTo({ center: [lng, lat], zoom: 17, duration: 1400, pitch: 55 });
-    setSelectedIncidentId(focusIncidentId);
-    setIsSidebarOpen(true);
-  }, [focusIncidentId, mapIncidents, mapReady]);
+  }, [focusIncidentId, mapIncidents, loading]);
 
   // Update highlight layer when affected edges change (e.g. after AI prediction)
   useEffect(() => {
@@ -390,37 +387,6 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
     map.current?.flyTo({ center: [lng, lat], zoom: 17, essential: true, pitch: 60 });
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    if (!value.trim()) { setSearchResults([]); return; }
-    searchTimeoutRef.current = setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-        const encoded = encodeURIComponent(value);
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?access_token=${token}&country=vn&language=vi&limit=5&proximity=108.2122,16.0680`
-        );
-        const data = await res.json();
-        setSearchResults(
-          (data.features || []).map((f: { id: string; place_name: string; center: [number, number] }) => ({
-            id: f.id,
-            place_name: f.place_name,
-            center: f.center,
-          }))
-        );
-      } catch { setSearchResults([]); }
-      finally { setSearchLoading(false); }
-    }, 350);
-  };
-
-  const handleSelectResult = (result: { center: [number, number]; place_name: string }) => {
-    map.current?.flyTo({ center: result.center, zoom: 16, duration: 1200, pitch: 45 });
-    setSearchQuery(result.place_name);
-    setSearchResults([]);
-  };
-
   // Stats
   const [totalEdges, setTotalEdges] = useState(0);
   const [congestedCount, setCongestedCount] = useState(0);
@@ -432,11 +398,13 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
       : 'mapbox://styles/mapbox/streets-v12';
   };
 
-  const loadGeoJSON = async () => {
+  const loadGeoJSON = async (forceFresh = false) => {
     try {
       const endpoint = isPublic ? '/public/edges/geojson' : '/edges/geojson';
-      const res = await api.get(endpoint);
-      const data = res.data;
+      if (forceFresh || !geoJsonPromiseRef.current) {
+        geoJsonPromiseRef.current = api.get(endpoint).then(res => res.data);
+      }
+      const data = await geoJsonPromiseRef.current;
       geojsonDataRef.current = data; // Cache for real-time mutation
 
       setTotalEdges(data.features.length);
@@ -444,7 +412,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
       let congested = 0;
       let totalDensity = 0;
       data.features.forEach((f: any) => {
-        const den = Number(f.properties.current_density) || 0;
+        const den = f.properties.current_density || 0;
         totalDensity += den;
         if (den > 0.6) congested++;
       });
@@ -635,11 +603,11 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
               <div class="text-xs text-muted-foreground mb-2">ID: ${id}</div>
               <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-semibold">${speedLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(Number(current_speed_kmh) || 0).toFixed(1)} km/h</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(current_speed_kmh || 0).toFixed(1)} km/h</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-xs font-semibold">${capacityLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((Number(current_density) || 0) * 100).toFixed(0)}%</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((current_density || 0) * 100).toFixed(0)}%</span>
               </div>
             </div>
           `;
@@ -721,42 +689,15 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
           {/* Search Bar */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-md z-20 px-4">
             <div className="relative bg-card/90 backdrop-blur-xl border border-border shadow-2xl rounded-2xl flex items-center pr-2 pl-4 py-2 hover:border-primary/30 transition-colors focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
-              {searchLoading
-                ? <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-primary rounded-full animate-spin mr-3 shrink-0" />
-                : <Search className="w-5 h-5 text-muted-foreground mr-3 shrink-0" />}
+              <Search className="w-5 h-5 text-muted-foreground mr-3" />
               <input
                 type="text"
                 placeholder={t('trafficMap.searchPlaceholder')}
                 value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Escape') { setSearchQuery(''); setSearchResults([]); } }}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/70 font-medium py-1 text-foreground"
               />
-              {searchQuery && (
-                <button
-                  onClick={() => { setSearchQuery(''); setSearchResults([]); }}
-                  className="p-1 hover:bg-muted rounded-lg transition-colors ml-1"
-                >
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              )}
             </div>
-
-            {/* Dropdown results */}
-            {searchResults.length > 0 && (
-              <div className="mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden">
-                {searchResults.map(result => (
-                  <button
-                    key={result.id}
-                    onClick={() => handleSelectResult(result)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border/50 last:border-0"
-                  >
-                    <MapPin className="w-4 h-4 text-primary shrink-0" />
-                    <span className="text-sm truncate">{result.place_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Sidebar Toggle Button (if sidebar closed) */}
@@ -791,20 +732,12 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               {mapIncidents.map((inc: any) => {
-                const incLat = inc.lat ?? inc.latitude ?? inc.location?.lat ?? inc.location_lat;
-                const incLng = inc.lng ?? inc.longitude ?? inc.location?.lng ?? inc.location_lng;
-                const hasCoords = !!(incLat && incLng);
+                const incLat = inc.lat || inc.location?.lat;
+                const incLng = inc.lng || inc.location?.lng;
                 return (
                   <div
                     key={inc.id}
-                    onClick={() => {
-                      if (hasCoords) {
-                        flyToIncident(incLng, incLat);
-                        setSelectedIncidentId(inc.id);
-                      } else {
-                        setSelectedIncidentId(inc.id);
-                      }
-                    }}
+                    onClick={() => incLng && incLat && flyToIncident(incLng, incLat)}
                     className="p-4 bg-background/50 hover:bg-accent/50 border border-border rounded-xl cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 group"
                   >
                     <div className="flex gap-3">
@@ -818,16 +751,10 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-sm truncate group-hover:text-primary transition-colors">{inc.title}</h4>
                         <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground font-medium">
-                          <span className="flex items-center gap-1 truncate max-w-[120px]">
-                            <MapPin className="w-3 h-3 shrink-0" />
-                            {inc.location_name || inc.area || inc.severity || '—'}
-                          </span>
-                          <span className="text-border shrink-0">•</span>
-                          <span className="shrink-0">{inc.created_at ? new Date(inc.created_at).toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : inc.time || ''}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {inc.severity || 'unknown'}</span>
+                          <span className="text-border">•</span>
+                          <span>{inc.created_at ? new Date(inc.created_at).toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : inc.time || ''}</span>
                         </div>
-                        {!hasCoords && (
-                          <p className="text-[10px] text-muted-foreground/50 mt-1 italic">{t('trafficMap.noCoords') || 'No location data'}</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -871,7 +798,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
                 <Activity className="w-3.5 h-3.5 text-amber-500" /> {t('trafficMap.avgDensity')}
               </div>
               <div className="text-3xl font-heading font-black text-amber-500">
-                {Number.isFinite(avgDensity) ? (avgDensity * 100).toFixed(0) : '—'}%
+                {(avgDensity * 100).toFixed(0)}%
               </div>
             </div>
           </div>
@@ -899,7 +826,7 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
         </div>
 
         <button
-          onClick={() => { setLoading(true); loadGeoJSON(); }}
+          onClick={() => { setLoading(true); loadGeoJSON(true); }}
           disabled={loading}
           className="p-4 rounded-2xl bg-card/90 backdrop-blur-xl border border-border shadow-lg hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer text-muted-foreground hover:text-foreground pointer-events-auto"
           title={t('trafficMap.refreshData')}

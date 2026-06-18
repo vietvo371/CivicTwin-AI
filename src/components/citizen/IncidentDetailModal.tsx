@@ -165,7 +165,7 @@ export default function IncidentDetailModal({ incidentId, onClose }: Props) {
                     {data.location_name}
                   </span>
                 )}
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5" suppressHydrationWarning>
                   <Clock className="w-3.5 h-3.5 shrink-0" />
                   {new Date(data.created_at).toLocaleString('vi-VN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>

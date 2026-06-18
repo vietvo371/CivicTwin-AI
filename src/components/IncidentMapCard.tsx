@@ -16,6 +16,12 @@ interface Props {
 export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const edgesPromiseRef = useRef<Promise<any> | null>(null);
+
+  // Pre-fetch edges immediately on mount to eliminate the waterfall
+  useEffect(() => {
+    edgesPromiseRef.current = api.get('/edges/geojson').then(res => res.data?.data ?? res.data);
+  }, []);
   const { resolvedTheme } = useTheme();
   const [mapLoading, setMapLoading] = useState(true);
   const highlightedSetRef = useRef(new Set<number>(highlightedEdgeIds));
@@ -39,7 +45,7 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
       map = new mapboxgl.Map({
         container: mapRef.current!,
         style: isDark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
-        center: [Number(lng), Number(lat)],
+        center: [lng, lat],
         zoom: 15,
         attributionControl: false,
       });
@@ -106,7 +112,7 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
           <style>@keyframes ping{75%,100%{transform:scale(2.2);opacity:0}}</style>
         `;
         new mapboxgl.Marker({ element: markerEl, anchor: 'center' })
-          .setLngLat([Number(lng), Number(lat)])
+          .setLngLat([lng, lat])
           .addTo(map);
 
         map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
@@ -125,8 +131,13 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
 
     const loadEdges = async () => {
       try {
-        const res = await api.get('/edges/geojson');
-        const geojson = res.data?.data ?? res.data;
+        let geojson;
+        if (edgesPromiseRef.current) {
+          geojson = await edgesPromiseRef.current;
+        } else {
+          const res = await api.get('/edges/geojson');
+          geojson = res.data?.data ?? res.data;
+        }
 
         if (cancelled || !mapInstanceRef.current) return;
 
@@ -189,11 +200,11 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
 
           <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-xl rounded-xl px-3 py-2 border shadow-lg flex items-center gap-2 text-xs font-mono z-[5]">
             <Navigation className="w-3.5 h-3.5 text-rose-500" />
-            {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+            {lat.toFixed(5)}, {lng.toFixed(5)}
           </div>
 
           <a
-            href={`https://www.google.com/maps?q=${Number(lat)},${Number(lng)}`}
+            href={`https://www.google.com/maps?q=${lat},${lng}`}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 left-3 bg-background/90 backdrop-blur-xl rounded-lg px-2.5 py-1.5 border shadow-lg flex items-center gap-1.5 text-xs font-semibold hover:bg-background transition-colors z-[5]"

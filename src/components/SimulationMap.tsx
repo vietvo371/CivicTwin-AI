@@ -37,6 +37,12 @@ export default function SimulationMap({ segments, isRunning, hasResult }: Simula
   const map = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const geojsonRef = useRef<any>(null);
+  const edgesPromiseRef = useRef<Promise<any> | null>(null);
+
+  // Pre-fetch edges immediately on mount to eliminate the waterfall
+  useEffect(() => {
+    edgesPromiseRef.current = api.get('/edges/geojson').then(res => res.data);
+  }, []);
   const { resolvedTheme } = useTheme();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
@@ -145,8 +151,14 @@ export default function SimulationMap({ segments, isRunning, hasResult }: Simula
 
       // Load GeoJSON
       try {
-        const res = await api.get('/edges/geojson');
-        geojsonRef.current = res.data;
+        let data;
+        if (edgesPromiseRef.current) {
+          data = await edgesPromiseRef.current;
+        } else {
+          const res = await api.get('/edges/geojson');
+          data = res.data;
+        }
+        geojsonRef.current = data;
 
         // Initially all edges are dim (no simulation)
         geojsonRef.current.features.forEach((f: any) => {

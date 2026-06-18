@@ -179,7 +179,7 @@ export default function IncidentDetailPage() {
             </h1>
 
             <div className="flex items-center gap-5 mt-4 text-white/70 text-sm flex-wrap">
-              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {fmt(data.created_at)}</span>
+              <span className="flex items-center gap-1.5" suppressHydrationWarning><Clock className="w-4 h-4" /> {fmt(data.created_at)}</span>
               <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Đà Nẵng</span>
               {data.source && <span className="flex items-center gap-1.5"><Navigation className="w-4 h-4" /> {t(`enums.incidentSource.${data.source}`)}</span>}
             </div>
@@ -360,7 +360,7 @@ function TimelineItem({ label, time, color }: { label: string; time: string; col
     <div className="relative">
       <div className={`absolute -left-[calc(0.75rem+5px)] top-1 w-2.5 h-2.5 rounded-full ${color} ring-4 ring-background`} />
       <p className="text-sm font-semibold">{label}</p>
-      <p className="text-xs text-muted-foreground">{time}</p>
+      <p className="text-xs text-muted-foreground" suppressHydrationWarning>{time}</p>
     </div>
   );
 }

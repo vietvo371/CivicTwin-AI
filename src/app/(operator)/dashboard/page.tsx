@@ -133,6 +133,7 @@ export default function DashboardPage() {
   const [pendingRecs, setPendingRecs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<number[]>([]);
+  const [clockTime, setClockTime] = useState<string>('');
 
   const focusIncidentId = searchParams.get('incident')
     ? Number(searchParams.get('incident'))
@@ -169,6 +170,14 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Live clock — client-only to avoid hydration mismatch
+  useEffect(() => {
+    const fmt = () => new Date().toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+    setClockTime(fmt());
+    const id = setInterval(() => setClockTime(fmt()), 60000);
+    return () => clearInterval(id);
+  }, [locale]);
+
   // Real-time WebSocket listeners
   useEchoMulti('traffic', {
     IncidentCreated: (data: any) => {
@@ -197,7 +206,7 @@ export default function DashboardPage() {
   const openCount = incidents.filter(i => i.status === 'open' || i.status === 'investigating').length;
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/50 p-6 rounded-2xl border border-border backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -214,7 +223,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
-          {t('op.lastSync')}: {new Date().toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+          {t('op.lastSync')}: {clockTime}
         </div>
       </div>
 
@@ -231,7 +240,7 @@ export default function DashboardPage() {
               icon={<AlertTriangle className="w-5 h-5 text-orange-500" />}
               trend={openCount > 0 ? { value: `${openCount}`, up: true } : undefined}
               accentColor="from-orange-500 to-amber-500"
-              sparkline={incidents.slice(0, 7).map((_, i) => Math.max(1, openCount - i + Math.floor(Math.random() * 3)))}
+              sparkline={incidents.slice(0, 7).map((_, i) => Math.max(1, openCount - i))}
               sparkColor="#f97316"
             />
             <KPICard

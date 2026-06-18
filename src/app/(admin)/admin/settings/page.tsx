@@ -22,7 +22,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1000px] mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/50 p-6 rounded-2xl border border-border backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -62,8 +62,15 @@ export default function SettingsPage() {
               <Select defaultValue="vi">
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vi">{t('settings.vietnamese')}</SelectItem>
-                  <SelectItem value="en">{t('settings.english')}</SelectItem>
+                  <SelectItem value="vi">Tiếng Việt</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="th">ไทย (Thai)</SelectItem>
+                  <SelectItem value="id">Indonesia</SelectItem>
+                  <SelectItem value="ms">Melayu</SelectItem>
+                  <SelectItem value="tl">Filipino</SelectItem>
+                  <SelectItem value="km">Khmer</SelectItem>
+                  <SelectItem value="lo">Lào (Lao)</SelectItem>
+                  <SelectItem value="my">Burmese</SelectItem>
                 </SelectContent>
               </Select>
             </div>
