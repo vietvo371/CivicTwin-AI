@@ -192,9 +192,9 @@ export default function SimulationMap({ segments, isRunning, hasResult }: Simula
             <div class="font-bold text-sm mb-2">${props.name || 'Unknown'}</div>
             <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <span class="text-muted-foreground font-semibold">${beforeLabel}:</span>
-              <span class="font-mono font-bold">${(props.sim_before * 100).toFixed(0)}%</span>
+              <span class="font-mono font-bold">${(Number(props.sim_before) * 100).toFixed(0)}%</span>
               <span class="text-muted-foreground font-semibold">${afterLabel}:</span>
-              <span class="font-mono font-bold" style="color:${getDensityColor(props.sim_after)}">${(props.sim_after * 100).toFixed(0)}%</span>
+              <span class="font-mono font-bold" style="color:${getDensityColor(props.sim_after)}">${(Number(props.sim_after) * 100).toFixed(0)}%</span>
               <span class="text-muted-foreground font-semibold">${changeLabel}:</span>
               <span class="font-mono font-bold text-rose-500">+${props.sim_change}%</span>
             </div>

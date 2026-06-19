@@ -603,11 +603,11 @@ export default function TrafficMap({ isPublic = false, hideOverlays = false, onM
               <div class="text-xs text-muted-foreground mb-2">ID: ${id}</div>
               <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-semibold">${speedLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(current_speed_kmh || 0).toFixed(1)} km/h</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${(Number(current_speed_kmh) || 0).toFixed(1)} km/h</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-xs font-semibold">${capacityLabel}:</span>
-                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((current_density || 0) * 100).toFixed(0)}%</span>
+                <span class="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">${((Number(current_density) || 0) * 100).toFixed(0)}%</span>
               </div>
             </div>
           `;

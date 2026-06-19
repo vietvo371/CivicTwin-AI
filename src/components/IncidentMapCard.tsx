@@ -200,7 +200,7 @@ export default function IncidentMapCard({ lat, lng, highlightedEdgeIds }: Props)
 
           <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-xl rounded-xl px-3 py-2 border shadow-lg flex items-center gap-2 text-xs font-mono z-[5]">
             <Navigation className="w-3.5 h-3.5 text-rose-500" />
-            {lat.toFixed(5)}, {lng.toFixed(5)}
+            {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
           </div>
 
           <a
